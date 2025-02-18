@@ -1,6 +1,3 @@
----
-title: EG-Store - Game Rental & Youth Development
----
 
 # EG-Store - Game Rental & Youth Development
 
