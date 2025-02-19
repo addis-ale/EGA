@@ -112,7 +112,7 @@ const LoginForm = () => {
       </div>
 
       {/* Buttons */}
-      <div className="px-6 py-4 flex flex-col gap-4">
+      <div className="px-6 pt-6 pb-8 flex flex-col gap-4">
         <Button
           label={isLoading ? "Loading..." : "Get started"}
           onClick={handleSubmit(onSubmit)}
