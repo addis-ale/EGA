@@ -14,8 +14,6 @@ export function Nav() {
 
   const navItems = [
     { href: "/", label: "Work", icon: Home },
-    { href: "/info", label: "Info", icon: Info },
-    { href: "/designs", label: "Design", icon: Palette },
   ]
 
   const externalLinks = [
