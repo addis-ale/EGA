@@ -31,7 +31,6 @@
     "next": "^15.1.7",
     "next-i18next": "^15.4.0",
     "next-themes": "^0.4.3",
-    "prisma": "^6.4.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.2",
@@ -50,7 +49,13 @@
     "eslint": "^8",
     "eslint-config-next": "15.0.3",
     "postcss": "^8",
+    "prisma": "^6.4.0",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
-  }
+  },
+  "description": "Welcome to the official repository for **EG-Store**, a platform that not only offers game rentals but also serves as an NGO dedicated to youth development through gaming experiences. This project is built with **Next.js**, **shadcn/ui**, and **Tailwind CSS** to deliver a modern, responsive, and engaging user experience.",
+  "main": "next-i18next.config.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

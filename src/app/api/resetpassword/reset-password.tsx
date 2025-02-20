@@ -1,7 +1,7 @@
 import { z } from "zod";
 import prisma from "@/lib/prismadb";
 import { NextApiRequest, NextApiResponse } from "next";
-import bcrypt from "bcrypt";
+import bcrypt from "bcrypjs";
 const requestSchema = z.object({
   token: z.string().min(6, "invalid token"),
   password: z.string().min(8, "the password must be greater than 8"),

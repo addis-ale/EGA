@@ -14,8 +14,8 @@ import axios from "axios";
 
 // ✅ Define Zod validation schema for SIGNUP
 const signUpSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
+  userName: z.string().min(2, "Name must be at least 2 characters"),
+  UserEmail: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
@@ -35,8 +35,8 @@ const SignUpForm = () => {
   } = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
-      name: "",
-      email: "",
+      userName: "",
+      UserEmail: "",
       password: "",
     },
   });
@@ -47,8 +47,13 @@ const SignUpForm = () => {
     setSignupError(null); // Reset the error state
 
     try {
-      const response = await axios.post("../api/signup", data);
-      if (response.status === 200) {
+      const response = await axios.post("/api/user/signup", {
+        userName: data.userName,
+        UserEmail: data.UserEmail,
+        password: data.password,
+      });
+
+      if (response.status >= 200 && response.status < 300) {
         console.log("Signup successful!", response.data);
         // Optionally redirect or show a success message
         router.push("/"); // Replace with your success page
@@ -91,7 +96,7 @@ const SignUpForm = () => {
         <div className="flex flex-col gap-2">
           <span className="text-black">Name*</span>
           <Input
-            id="name"
+            id="userName"
             label="Enter your name"
             disabled={isLoading}
             register={register}
@@ -102,7 +107,7 @@ const SignUpForm = () => {
         <div className="flex flex-col gap-2">
           <span className="text-black">Email*</span>
           <Input
-            id="email"
+            id="UserEmail"
             label="Enter your email"
             disabled={isLoading}
             register={register}

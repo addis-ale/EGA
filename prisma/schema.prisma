@@ -1,26 +1,121 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "mongodb"
   url      = env("DATABASE_URL")
 }
- 
-generator client {
-  provider = "prisma-client-js"
-}
- 
+
 model User {
-  id            String          @id @default(auto()) @map("_id") @db.ObjectId
-  name          String
-  email         String        @unique
-  hashedPassword String
-  accounts      Account[]
-  role Role @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+    userName String
+    UserEmail String @unique
+    emailVerfied DateTime?
+    password String
+    review Review[]
+    cart Cart[]
+    order Order[]
+    search SearchHistory[]
+    accounts  Account[]
+    sessions  Session[]
+     Authenticator Authenticator[]
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
- enum Role{
-    USER
-    ADMIN
- }
+
+model Game {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  gameName  String 
+  type   GameType 
+  imageUrl  String?
+  videoUrl  String?
+  discountPrice  Int
+  price        Int
+  ageLimit  Int
+  review  Review[]
+
+
+}
+
+model Review {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+     user  User @relation(fields:[userId],references: [id])
+     userId String
+     game Game @relation(fields: [gameId],references: [id])
+     gameId String
+     content String 
+     Likes Int
+     disLikes  Int 
+     rating Int @default(1)
+
+}
+
+model Cart {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+       userId String
+       user User @relation(fields: [userId], references: [id])
+       items CartItem[]
+       createdAt DateTime @default(now())
+       updatedAt DateTime @updatedAt
+
+
+}
+model CartItem{
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+         cartId String
+         cart Cart @relation(fields: [cartId],references: [id])
+         prodcutId String
+         quantity Int
+         price Float
+         imageUrl String
+
+
+
+}
+model Order{
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+           userId String
+           user User @relation(fields: [userId],references: [id])
+           orderItem OrderItem[]
+           status Orderstatus @default(PENDING)
+           createdAt DateTime @default(now())
+           updatedAt DateTime @updatedAt
+
+}
+model OrderItem{
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+          orderId String
+          order Order @relation(fields: [orderId],references: [id])
+          productId String
+          quantity Int
+          price Float
+        
+
+ 
+}
+model SearchHistory {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+            userId String
+            user User @relation(fields: [userId],references: [id])
+            search Search[]
+
+
+
+}
+model Search{
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+            searchId String
+            searchHitory SearchHistory @relation(fields: [searchId],references: [id])
+            searchQuery String 
+
+}
 model Account {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
   userId            String  @db.ObjectId
@@ -33,10 +128,78 @@ model Account {
   token_type        String?
   scope             String?
   id_token          String? @db.String
+  session_state     String?
+ 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+ 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
   @@unique([provider, providerAccountId])
 }
 
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+ 
+model VerificationToken {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  identifier String
+  token      String
+  expires    DateTime
+ 
+  @@unique([identifier, token])
+}
+ 
+// Optional for WebAuthn support
+model Authenticator {
+  credentialID         String  @id @map("_id")
+  userId               String  @db.ObjectId
+  providerAccountId    String
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+ 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@unique([userId, credentialID])
+}
 
+
+
+
+
+
+
+
+
+
+
+enum GameType{
+  TABLE_TOP
+  PHYSICAL
+
+}
+
+
+
+
+
+
+
+
+enum Orderstatus {
+  SHIPED
+  PENDING
+  COMPLETED
+  CANCELED
+}
