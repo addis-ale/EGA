@@ -5,7 +5,7 @@ import { z, ZodError } from "zod";
 const gameSchema = z.object({
   id: z.string(),
   gameName: z.string().min(1, "game name required"),
-  type: z.enum(["TABLE_TOP", "PHYSICAL"]).optional(),
+  type: z.enum(["TABLE_TOP", "PHYSICAL"]),
   imageUrl: z.string().url().optional(),
   videoUrl: z.string().url().optional(),
   price: z.number().min(0, "price should be postive number").optional(),
