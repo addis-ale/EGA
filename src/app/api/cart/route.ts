@@ -41,6 +41,7 @@ export async function POST(req: Request) {
       });
     }
     const { item, userId } = validation.data;
+    await prisma.$connect();
 
     const cart = await prisma.cart.create({
       data: {
@@ -66,5 +67,7 @@ export async function POST(req: Request) {
       detail: error,
       status: 500,
     });
+  } finally {
+    await prisma.$disconnect();
   }
 }

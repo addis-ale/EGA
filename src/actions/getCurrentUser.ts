@@ -5,10 +5,9 @@ export const getCurrentUser = async () => {
   const session = await getServerSession(authOptions);
 
   if (!session || !session.user) {
-    return null; // If no session, return null
+    return null;
   }
 
-  // Extract user details
   const { user } = session;
 
   return user;

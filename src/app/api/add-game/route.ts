@@ -2,7 +2,7 @@ import prisma from "@/lib/prismadb";
 
 import { z } from "zod";
 import { NextResponse } from "next/server";
-import { error } from "console";
+import { getCurrentUser } from "@/actions/getCurrentUser";
 
 const gameSchema = z.object({
   id: z.string().uuid().optional(),
@@ -16,6 +16,9 @@ const gameSchema = z.object({
 });
 const allowedTypes = ["TABLE_TOP", "PHYSICAL"];
 export async function POST(req: Request) {
+  const user = getCurrentUser();
+  console.log(user);
+
   try {
     const body = await req.json();
     console.log(body);
@@ -59,6 +62,7 @@ export async function POST(req: Request) {
       discountPrice,
       ageLimit,
     } = validation.data;
+    await prisma.$connect();
     const game = await prisma.game.create({
       data: {
         gameName,

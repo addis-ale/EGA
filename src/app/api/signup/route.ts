@@ -57,6 +57,7 @@ export async function POST(req: Request) {
         },
       });
     }
+    await prisma.$connect();
 
     const existedUser = await prisma.user.findUnique({
       where: { UserEmail },
@@ -105,5 +106,7 @@ export async function POST(req: Request) {
       { error: "Unknown error", message: "Something went wrong" },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }

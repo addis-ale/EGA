@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prismadb";
 import { z } from "zod";
 
@@ -23,6 +23,7 @@ export async function POST(req: Request) {
     console.log(body);
     const validation = orderSchema.safeParse({
       ...body,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       orderItem: body.orderItem?.map((order: any) => ({
         ...order,
         quantity: Number(order.quantity),
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
     }
 
     const { userId, orderItem } = validation.data;
-
+    await prisma.$connect();
     const order = await prisma.order.create({
       data: {
         userId,
