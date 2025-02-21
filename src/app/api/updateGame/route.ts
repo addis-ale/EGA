@@ -41,7 +41,9 @@ export async function PUT(req: Request) {
       discountPrice,
       ageLimit,
     } = validateData;
-    await prisma.$connect();
+    await prisma.$connect().catch((error) => {
+      throw new Error("db connection", error);
+    });
 
     const existingGame = await prisma.game.findUnique({
       where: { id },

@@ -13,7 +13,7 @@ const cartitemschema = z.object({
 const cartSchema = z.object({
   id: z.string().uuid().optional(),
   userId: z.string().min(1, "user id required"),
-  item: z.array(cartitemschema).optional(),
+  items: z.array(cartitemschema).optional(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
 });
@@ -40,14 +40,14 @@ export async function POST(req: Request) {
         status: 422,
       });
     }
-    const { item, userId } = validation.data;
+    const { items, userId } = validation.data;
     await prisma.$connect();
 
     const cart = await prisma.cart.create({
       data: {
         userId,
         items: {
-          create: item?.map((cartitem) => ({
+          create: items?.map((cartitem) => ({
             prodcutId: cartitem.productId,
             price: cartitem.price,
             quantity: cartitem.quantity,
