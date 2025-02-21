@@ -25,11 +25,10 @@
     ]
   },
   "include": [
-    "next-env.d.ts",
+    "src/types/next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
-    "src/app/api/user/signup/route.ts"
+    ".next/types/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }

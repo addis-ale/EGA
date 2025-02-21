@@ -11,7 +11,7 @@ interface ButtonProps {
   icon?: IconType;
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
-const Button: React.FC<ButtonProps> = ({
+const CustomeButton: React.FC<ButtonProps> = ({
   label,
   disabled,
   small,
@@ -37,4 +37,4 @@ const Button: React.FC<ButtonProps> = ({
     </button>
   );
 };
-export default Button;
+export default CustomeButton;

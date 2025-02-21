@@ -1,81 +1,81 @@
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import prisma from "@/lib/prismadb";
-import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import GoogleProvider from "next-auth/providers/google";
-import bcrypt from "bcryptjs";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import prisma from "./prismadb";
+import { compareSync } from "bcrypt";
+import { AuthOptions } from "next-auth";
 
-export const authOptions: NextAuthOptions = {
+export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(prisma),
+  session: {
+    strategy: "jwt",
+  },
+  pages: {
+    signIn: "/login",
+  },
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-    }),
     CredentialsProvider({
-      name: "credintial",
+      name: "Credentials",
       credentials: {
-        email: {
-          label: "Email",
-          type: "text",
-        },
-        password: {
-          label: "Password",
-          type: "password",
-        },
+        email: { label: "email", type: "email", placeholder: "email" },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.email || !credentials.password) {
           return null;
         }
-
-        const user = await prisma.user.findUnique({
-          where: { UserEmail: credentials.email },
+        const existedUser = await prisma.user.findFirst({
+          where: {
+            email: credentials.email,
+          },
         });
-        if (!user) {
+        if (!existedUser) {
+          return null;
+        }
+        const isPasswordMatch = compareSync(
+          credentials.password,
+          existedUser.hashedPassword
+        );
+        if (!isPasswordMatch) {
           return null;
         }
 
-        const passwordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-        if (!passwordValid) {
-          return null;
-        }
+        // Any object returned will be saved in `user` property of the JWT
         return {
-          id: user.id,
-          userName: user.userName,
-          UserEmail: user.UserEmail,
+          id: existedUser.id,
+          name: existedUser.name,
+          role: existedUser.role,
+          email: existedUser.email,
         };
       },
     }),
   ],
-  session: {
-    strategy: "jwt",
-  },
   callbacks: {
-    async jwt({ token, user }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async jwt({ token, user }: { token: any; user?: any }) {
+      // Persist the OAuth access_token and or the user id to the token right after signin
       if (user) {
-        token.id = user.id;
-        token.userName = user.name;
-        token.UserEmail = user.email;
+        return {
+          ...token,
+          name: user.name,
+          email: user.email,
+          id: user.id,
+          role: user.role,
+        };
       }
       return token;
     },
-
-    async session({ session, token }) {
-      if (token) {
-        session.user = {
-          Id: token.id,
-          userName: token.userName,
-          UserEmail: token.email,
-        };
-      }
-      return session;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async session({ session, token }: { session: any; token: any }) {
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          name: token.name,
+          email: token.email,
+          id: token.id,
+          role: token.role,
+        },
+      };
     },
-  },
-  pages: {
-    signIn: "/login",
   },
 };
