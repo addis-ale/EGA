@@ -18,17 +18,17 @@ export async function GET(req: Request) {
       throw new Error("db conection problem", error);
     });
 
-    const gamePromise = await prisma.game.findUnique({
+    const getGame = await prisma.game.findUnique({
       where: { id: gameId.toString() },
       include: {
         review: true,
       },
     });
 
-    const getGame = await Promise.race([
-      gamePromise,
-      setInterval((_, reject) => reject(new Error("time out ,finshed")), 10000),
-    ]);
+    // const getGame = await Promise.race([
+    //   gamePromise,
+    //   setTimeout((_, reject) => reject(new Error("time out ,finshed")), 10000),
+    // ]);
 
     console.log(getGame);
     if (!getGame)
@@ -52,5 +52,7 @@ export async function GET(req: Request) {
       message: "server error",
       status: 500,
     });
+  } finally {
+    await prisma.$disconnect();
   }
 }
