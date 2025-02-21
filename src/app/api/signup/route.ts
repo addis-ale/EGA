@@ -4,19 +4,64 @@ import { hashSync } from "bcrypt";
 
 import { z, ZodError } from "zod";
 const signUpSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
+  userName: z.string().min(2, "Name must be at least 2 characters"),
+  UserEmail: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  review: z
+    .array(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .optional(),
+  cart: z
+    .array(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .optional(),
+  order: z
+    .array(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .optional(),
+  search: z
+    .array(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .optional(),
 });
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    console.log(body);
+    if (!body) {
+      return NextResponse.json({
+        error: "user credintial object needed",
+      });
+    }
+    const { userName, UserEmail, password } = signUpSchema.parse(body);
+    console.log(userName, UserEmail, password);
+    if (!userName || !UserEmail || !password) {
+      return NextResponse.json({
+        error: "cant parse credintial from zod",
+        data: {
+          userName,
+          UserEmail,
+        },
+      });
+    }
 
-    const { name, email, password } = signUpSchema.parse(body);
     const existedUser = await prisma.user.findUnique({
-      where: { email },
+      where: { UserEmail },
     });
+    console.log(existedUser);
     if (existedUser) {
       return NextResponse.json(
         {
@@ -29,13 +74,13 @@ export async function POST(req: Request) {
     const hashedPassword = hashSync(password, 10);
     const newUser = await prisma.user.create({
       data: {
-        name,
-        email,
-        hashedPassword,
+        userName,
+        UserEmail,
+        password: hashedPassword,
       },
     });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { hashedPassword: newUserPassword, ...rest } = newUser;
+    const { password: newUserPassword, ...rest } = newUser;
     return NextResponse.json(
       {
         user: rest,
@@ -51,8 +96,7 @@ export async function POST(req: Request) {
     } else if (error instanceof Error) {
       return NextResponse.json(
         {
-          error: error.message,
-          message: "Something went wrong",
+          detial: error.message,
         },
         { status: 500 }
       );

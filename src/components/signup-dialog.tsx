@@ -15,8 +15,8 @@ import { signIn } from "next-auth/react";
 
 // Zod Schema for Form Validation
 const signUpSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
+  userName: z.string().min(2, "Name must be at least 2 characters"),
+  UserEmail: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
@@ -44,8 +44,8 @@ export function SignUpDialog({
   } = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
-      name: "",
-      email: "",
+      userName: "",
+      UserEmail: "",
       password: "",
     },
   });
@@ -59,7 +59,11 @@ export function SignUpDialog({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          userName: data.userName,
+          UserEmail: data.UserEmail,
+          password: data.password,
+        }),
       });
 
       if (response.status === 201) {
@@ -69,7 +73,7 @@ export function SignUpDialog({
           variant: "default",
         });
         await signIn("credentials", {
-          email: data.email,
+          email: data.UserEmail,
           password: data.password,
           redirect: false, // Change to `true` to auto-redirect
         });
@@ -132,11 +136,11 @@ export function SignUpDialog({
               id="name"
               placeholder="Enter your name"
               disabled={isLoading}
-              {...register("name")}
+              {...register("userName")}
               className="py-6 text-black"
             />
-            {errors.name && (
-              <p className="text-red-500 text-xs">{errors.name.message}</p>
+            {errors.userName && (
+              <p className="text-red-500 text-xs">{errors.userName.message}</p>
             )}
           </div>
 
@@ -146,11 +150,11 @@ export function SignUpDialog({
               id="email"
               placeholder="Enter your email"
               disabled={isLoading}
-              {...register("email")}
+              {...register("UserEmail")}
               className="py-6 text-black"
             />
-            {errors.email && (
-              <p className="text-red-500 text-xs">{errors.email.message}</p>
+            {errors.UserEmail && (
+              <p className="text-red-500 text-xs">{errors.UserEmail.message}</p>
             )}
           </div>
 

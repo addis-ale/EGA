@@ -25,7 +25,7 @@ export const authOptions: AuthOptions = {
         }
         const existedUser = await prisma.user.findFirst({
           where: {
-            email: credentials.email,
+            UserEmail: credentials.email,
           },
         });
         if (!existedUser) {
@@ -33,7 +33,7 @@ export const authOptions: AuthOptions = {
         }
         const isPasswordMatch = compareSync(
           credentials.password,
-          existedUser.hashedPassword
+          existedUser.password
         );
         if (!isPasswordMatch) {
           return null;
@@ -42,9 +42,9 @@ export const authOptions: AuthOptions = {
         // Any object returned will be saved in `user` property of the JWT
         return {
           id: existedUser.id,
-          name: existedUser.name,
+          name: existedUser.userName,
           role: existedUser.role,
-          email: existedUser.email,
+          email: existedUser.UserEmail,
         };
       },
     }),
