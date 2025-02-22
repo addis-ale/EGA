@@ -25,6 +25,15 @@ export async function DELETE(
       throw new Error("db connection", error);
     });
 
+    const isUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!isUser) {
+      return NextResponse.json({
+        error: "user not found",
+      });
+    }
+
     const itemfind = await prisma.cart.findUnique({
       where: { id: cartId },
       include: {

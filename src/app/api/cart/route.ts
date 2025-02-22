@@ -18,8 +18,6 @@ const cartSchema = z.object({
   updatedAt: z.date().optional(),
 });
 
-//
-//
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -42,6 +40,15 @@ export async function POST(req: Request) {
     }
     const { items, userId } = validation.data;
     await prisma.$connect();
+
+    const isUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!isUser) {
+      return NextResponse.json({
+        error: "user not found",
+      });
+    }
 
     const cart = await prisma.cart.create({
       data: {
