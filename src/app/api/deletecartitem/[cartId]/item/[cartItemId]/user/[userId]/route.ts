@@ -8,11 +8,11 @@ const cart = z.object({
 
 export async function DELETE(
   req: Request,
-  context: { params: { cartId: string; cartItemId: string } }
+  context: { params: { cartId: string; cartItemId: string; userId: string } }
 ) {
   try {
     const { params } = context;
-    const { cartId, cartItemId } = params;
+    const { cartId, cartItemId, userId } = params;
 
     const validation = cart.safeParse({ cartId, cartItemId });
     if (!validation.success) {
@@ -36,6 +36,13 @@ export async function DELETE(
       return NextResponse.json({
         error: "cart with this id not found",
         status: 409,
+      });
+    }
+
+    if (itemfind.userId !== userId) {
+      return NextResponse.json({
+        error: "unauthorized access",
+        status: 403,
       });
     }
     console.log(itemfind);
