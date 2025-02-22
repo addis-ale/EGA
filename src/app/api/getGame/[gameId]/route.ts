@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prismadb";
 
-export async function GET(req: Request) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function GET(
+  req: Request,
+  context: { params: { gameId: string } }
+) {
   try {
-    const url = new URL(req.url);
-    const gameId = url.searchParams.get("gameId");
+    const { params } = context;
+    console.log(params);
+    const { gameId } = await params;
+    console.log(gameId);
 
     if (!gameId) {
       return NextResponse.json({
@@ -14,21 +20,12 @@ export async function GET(req: Request) {
     }
     console.log(gameId);
 
-    await prisma.$connect().catch((error) => {
-      throw new Error("db conection problem", error);
-    });
-
     const getGame = await prisma.game.findUnique({
       where: { id: gameId.toString() },
       include: {
         review: true,
       },
     });
-
-    // const getGame = await Promise.race([
-    //   gamePromise,
-    //   setTimeout((_, reject) => reject(new Error("time out ,finshed")), 10000),
-    // ]);
 
     console.log(getGame);
     if (!getGame)

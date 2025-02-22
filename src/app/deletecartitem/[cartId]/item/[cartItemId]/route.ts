@@ -6,11 +6,14 @@ const cart = z.object({
   cartItemId: z.string().min(1, "cart item id needed"),
 });
 
-export async function DELETE(req: Request) {
+export async function DELETE(
+  req: Request,
+  context: { params: { cartId: string; cartItemId: string } }
+) {
   try {
-    const url = new URL(req.url);
-    const cartId = url.searchParams.get("cartId");
-    const cartItemId = url.searchParams.get("cartItemId");
+    const { params } = context;
+    const { cartId, cartItemId } = params;
+
     if (!cartId || !cartItemId) {
       return NextResponse.json({
         error: "item needed",
@@ -27,15 +30,6 @@ export async function DELETE(req: Request) {
     await prisma.$connect().catch((error) => {
       throw new Error("db connection", error);
     });
-    const cartid = await prisma.cart.findUnique({
-      where: { id: cartId },
-    });
-    if (!cartid) {
-      return NextResponse.json({
-        error: "cart with this id not found",
-        status: 409,
-      });
-    }
 
     const itemfind = await prisma.cart.findUnique({
       where: { id: cartId },
@@ -43,6 +37,12 @@ export async function DELETE(req: Request) {
         items: true,
       },
     });
+    if (!itemfind) {
+      return NextResponse.json({
+        error: "cart with this id not found",
+        status: 409,
+      });
+    }
     const cartitemid = itemfind?.items.find((item) => item.id === cartItemId);
     if (!cartitemid) {
       return NextResponse.json({
@@ -66,7 +66,7 @@ export async function DELETE(req: Request) {
       });
     } else if (error instanceof ZodError) {
       return NextResponse.json({
-        error: error.message,
+        error: error.flatten().fieldErrors,
         status: 400,
       });
     }

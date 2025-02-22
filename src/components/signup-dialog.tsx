@@ -54,6 +54,7 @@ export function SignUpDialog({
     setIsLoading(true);
 
     try {
+      fetch("localhost:3000/ch.json");
       const response = await fetch("/api/signup", {
         method: "POST",
         headers: {
