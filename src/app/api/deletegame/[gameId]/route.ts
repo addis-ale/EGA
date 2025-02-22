@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prismadb";
 
-export async function DELETE(req: Request) {
+export async function DELETE(
+  req: Request,
+  context: { params: { gameId: string } }
+) {
   try {
-    const url = new URL(req.url);
-    const gameId = url.searchParams.get("gameId");
+    const { params } = context;
+    const { gameId } = params;
+
     if (!gameId) {
       return NextResponse.json({
         error: "game id required to delete",
@@ -15,7 +19,7 @@ export async function DELETE(req: Request) {
       throw new Error("db connection failed", error);
     });
     await prisma.game.delete({
-      where: { id: gameId },
+      where: { id: gameId.toString() },
     });
     return NextResponse.json({
       message: "game deleted",
