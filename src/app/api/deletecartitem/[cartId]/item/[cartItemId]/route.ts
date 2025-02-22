@@ -14,12 +14,6 @@ export async function DELETE(
     const { params } = context;
     const { cartId, cartItemId } = params;
 
-    if (!cartId || !cartItemId) {
-      return NextResponse.json({
-        error: "item needed",
-        status: 409,
-      });
-    }
     const validation = cart.safeParse({ cartId, cartItemId });
     if (!validation.success) {
       return NextResponse.json({
@@ -37,12 +31,14 @@ export async function DELETE(
         items: true,
       },
     });
+
     if (!itemfind) {
       return NextResponse.json({
         error: "cart with this id not found",
         status: 409,
       });
     }
+    console.log(itemfind);
     const cartitemid = itemfind?.items.find((item) => item.id === cartItemId);
     if (!cartitemid) {
       return NextResponse.json({
