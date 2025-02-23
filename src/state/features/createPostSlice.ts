@@ -14,18 +14,8 @@ const productSchema = z.object({
     .min(50, "Product description must contain at least 50 characters")
     .optional(),
   // Allow file objects in the state (using `File` type)
-  coverImage: z
-    .instanceof(File)
-    .refine((file) => !!file, {
-      message: "Cover image is required.",
-    })
-    .optional(), // Optional, user might not upload immediately
-  video: z
-    .instanceof(File)
-    .refine((file) => !!file, {
-      message: "Video is required.",
-    })
-    .optional(), // Optional for video
+  videoUrl: z.string(),
+  imageUrl: z.string(),
   price: z.number().min(0, "Price must be posetive number"),
 
   discountPercentage: z
@@ -49,13 +39,13 @@ type ProductState = z.infer<typeof productSchema>;
 const initialState: ProductState = {
   productName: "",
   productDescription: "",
-  coverImage: undefined,
-  video: undefined,
-  price: 0,
+  imageUrl: "",
+  videoUrl: "",
   discountPercentage: 0,
   ageRestriction: "all",
   gameType: "Table Game",
   availableProduct: 0,
+  price: 0,
 };
 
 // Create the slice
@@ -67,8 +57,8 @@ export const createPostSlice = createSlice({
     updateProduct: (state, action: PayloadAction<ProductState>) => {
       state.productName = action.payload.productName;
       state.productDescription = action.payload.productDescription;
-      state.coverImage = action.payload.coverImage || state.coverImage;
-      state.video = action.payload.video || state.video;
+      state.imageUrl = action.payload.imageUrl;
+      state.videoUrl = action.payload.videoUrl;
       state.price = action.payload.price;
       state.discountPercentage = action.payload.discountPercentage;
       state.ageRestriction = action.payload.ageRestriction;
@@ -80,8 +70,8 @@ export const createPostSlice = createSlice({
     resetProduct: (state) => {
       state.productName = "";
       state.productDescription = "";
-      state.coverImage = undefined;
-      state.video = undefined;
+      state.imageUrl = "";
+      state.videoUrl = "";
       state.price = 0;
       state.discountPercentage = 0;
       state.ageRestriction = "all";

@@ -23,8 +23,8 @@ import type { RootState } from "@/state/store";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-
-const MAX_FILE_SIZE = 5000000; // 5MB
+import axios from "axios";
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = [
   "image/jpeg",
   "image/jpg",
@@ -35,21 +35,21 @@ const ACCEPTED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/ogg"];
 
 const formSchema = z.object({
   coverImage: z
-    .instanceof(File)
-    .refine((file) => file.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
+    .instanceof(File, { message: "Cover image is required." }) // Ensures a file is selected
+    .refine((file) => file.size <= MAX_FILE_SIZE, "Max file size is 5MB.")
     .refine(
       (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
       "Only .jpg, .jpeg, .png, and .webp formats are supported."
     ),
+
   video: z
-    .instanceof(File)
-    .refine((file) => file.size <= MAX_FILE_SIZE * 10, `Max file size is 50MB.`)
+    .instanceof(File, { message: "Video is required." }) // Ensures a file is selected
+    .refine((file) => file.size <= MAX_FILE_SIZE * 10, "Max file size is 50MB.")
     .refine(
       (file) => ACCEPTED_VIDEO_TYPES.includes(file.type),
       "Only .mp4, .webm, and .ogg formats are supported."
     ),
 });
-
 function Dropzone({
   onDrop,
   accept,
@@ -73,57 +73,54 @@ function Dropzone({
 
 export default function StepTwo() {
   const product = useSelector((state: RootState) => state.createPost);
-  const { video, coverImage, productName, productDescription } = product;
+  const { imageUrl, videoUrl, productName, productDescription } = product;
   const router = useRouter();
-
-  useEffect(() => {
-    if (!productName || !productDescription) {
-      router.push("/dashboard/createpost/step1"); // Redirect if Step 1 is incomplete
-    }
-  }, [productName, productDescription, router]);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      coverImage: coverImage,
-      video: video,
-    },
-  });
   const { toast } = useToast();
   const dispatch = useDispatch();
-
   const [uploadedCoverImage, setUploadedCoverImage] = useState<string | null>(
     null
   );
   const [uploadedVideo, setUploadedVideo] = useState<string | null>(null);
-
   useEffect(() => {
-    let coverImageUrl: string | null = null;
-    let videoUrl: string | null = null;
-
-    if (coverImage instanceof File) {
-      coverImageUrl = URL.createObjectURL(coverImage);
-      setUploadedCoverImage(coverImageUrl);
-    } else if (typeof coverImage === "string") {
-      setUploadedCoverImage(coverImage); // Keep existing URL if it's already a string
+    if (!productName || !productDescription) {
+      router.push("/dashboard/createpost/step1"); // Redirect if Step 1 is incomplete
     }
-
-    if (video instanceof File) {
-      videoUrl = URL.createObjectURL(video);
+    if (imageUrl || videoUrl) {
+      setUploadedCoverImage(imageUrl);
       setUploadedVideo(videoUrl);
-    } else if (typeof video === "string") {
-      setUploadedVideo(video);
     }
+  }, [productName, productDescription, router, imageUrl, videoUrl]);
 
-    return () => {
-      if (coverImageUrl) URL.revokeObjectURL(coverImageUrl);
-      if (videoUrl) URL.revokeObjectURL(videoUrl);
-    };
-  }, [coverImage, video]); // Removed uploadedCoverImage and uploadedVideo to prevent re-renders
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      coverImage: undefined,
+      video: undefined,
+    },
+  });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    if (!values.coverImage) {
+  const uploadToCloudinary = async (file: File, type: "image" | "video") => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "EGA");
+
+    try {
+      const response = await axios.post(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/upload`,
+        formData
+      );
+
+      return response.data.secure_url;
+    } catch (error) {
+      console.error(`Error uploading ${type}:`, error);
+      return null;
+    }
+  };
+  const [isLoading, setUploading] = useState(false);
+  async function onSubmit(data: z.infer<typeof formSchema>) {
+    console.log(data);
+
+    if (!data.coverImage) {
       toast({
         title: "Error",
         description: "Please upload a cover image.",
@@ -132,7 +129,7 @@ export default function StepTwo() {
       return;
     }
 
-    if (!values.video) {
+    if (!data.video) {
       toast({
         title: "Error",
         description: "Please upload a video file.",
@@ -140,8 +137,16 @@ export default function StepTwo() {
       });
       return;
     }
+    setUploading(true);
 
-    dispatch(updateProduct({ ...product, ...values }));
+    // Upload only if new files are selected
+    const imageUrl = await uploadToCloudinary(data.coverImage, "image");
+
+    const videoUrl = await uploadToCloudinary(data.video, "video");
+
+    //TODO: Dispatch to redux the url
+    setUploading(false);
+    dispatch(updateProduct({ ...product, ...{ imageUrl, videoUrl } }));
     toast({
       title: "You submitted the following files:",
       description: (
