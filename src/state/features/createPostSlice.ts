@@ -8,39 +8,50 @@ const productSchema = z.object({
     .string()
     .min(3, "Product name must contain at least 3 characters")
     .max(50, "Product name can't be longer than 50 characters")
-    .optional(),
+    .default(""),
+
   productDescription: z
     .string()
     .min(50, "Product description must contain at least 50 characters")
-    .optional(),
-  // Allow file objects in the state (using `File` type)
-  videoUrl: z.string(),
-  imageUrl: z.string(),
-  price: z.number().min(0, "Price must be posetive number"),
+    .default(""),
+
+  uploadedVideo: z.string().default(""),
+  uploadedCoverImage: z.string().default(""),
+
+  price: z.number().min(0, "Price must be a positive number").default(0),
 
   discountPercentage: z
     .number()
     .min(0, "Discount must be positive")
-    .max(100, "Discount cannot exceed 100%"),
+    .max(100, "Discount cannot exceed 100%")
+    .default(0),
 
-  ageRestriction: z.enum(["all", "13", "15", "18"], {
-    required_error: "Please select an age restriction",
-  }),
-  gameType: z.string().min(1, "Please select a game type"),
+  ageRestriction: z
+    .enum(["all", "13", "15", "18"], {
+      required_error: "Please select an age restriction",
+    })
+    .default("all"),
+
+  gameType: z
+    .string()
+    .min(1, "Please select a game type")
+    .default("Table Game"),
+
   availableProduct: z
     .number()
     .int()
-    .min(1, "Available product must be a atleast one"),
+    .min(1, "Available product must be at least one")
+    .default(1),
 });
 
 type ProductState = z.infer<typeof productSchema>;
 
-// Initial state with empty values
+// Initial state using inferred Zod defaults
 const initialState: ProductState = {
   productName: "",
   productDescription: "",
-  imageUrl: "",
-  videoUrl: "",
+  uploadedCoverImage: "",
+  uploadedVideo: "",
   discountPercentage: 0,
   ageRestriction: "all",
   gameType: "Table Game",
@@ -53,31 +64,13 @@ export const createPostSlice = createSlice({
   name: "createPost",
   initialState,
   reducers: {
-    // Update the product data in the Redux state
-    updateProduct: (state, action: PayloadAction<ProductState>) => {
-      state.productName = action.payload.productName;
-      state.productDescription = action.payload.productDescription;
-      state.imageUrl = action.payload.imageUrl;
-      state.videoUrl = action.payload.videoUrl;
-      state.price = action.payload.price;
-      state.discountPercentage = action.payload.discountPercentage;
-      state.ageRestriction = action.payload.ageRestriction;
-      state.availableProduct = action.payload.availableProduct;
-      state.gameType = action.payload.gameType;
+    // Update product data in the Redux state (only update provided fields)
+    updateProduct: (state, action: PayloadAction<Partial<ProductState>>) => {
+      return { ...state, ...action.payload };
     },
 
     // Reset state to its initial values
-    resetProduct: (state) => {
-      state.productName = "";
-      state.productDescription = "";
-      state.imageUrl = "";
-      state.videoUrl = "";
-      state.price = 0;
-      state.discountPercentage = 0;
-      state.ageRestriction = "all";
-      state.gameType = "Table Game";
-      state.availableProduct = 1;
-    },
+    resetProduct: () => initialState,
   },
 });
 
