@@ -9,7 +9,7 @@ export async function GET(
   try {
     const { params } = context;
     console.log(params);
-    const { gameId } = await params;
+    const { gameId } = params;
     console.log(gameId);
 
     if (!gameId) {
@@ -24,6 +24,7 @@ export async function GET(
       where: { id: gameId.toString() },
       include: {
         review: true,
+        available: true,
       },
     });
 

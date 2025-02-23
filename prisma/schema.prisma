@@ -38,7 +38,7 @@ enum UserRoll {
 
 model Game {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
-  gameName  String 
+  gameName  String  @unique
   type   GameType 
   imageUrl  String?
   videoUrl  String?
@@ -47,17 +47,26 @@ model Game {
   ageLimit  Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  available Int
+  available Available[]
   review  Review[]
+  
 
 
+}
+model Available {
+  id               String  @id @default(auto()) @map("_id") @db.ObjectId
+gameId String   @db.ObjectId @unique
+game Game @relation(fields: [gameId],references: [id],onDelete: Cascade)
+available Int @default(0)
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
 }
 
 model Review {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
      user  User @relation(fields:[userId],references: [id])
      userId String
-     game Game @relation(fields: [gameId],references: [id])
+     game Game @relation(fields: [gameId],references: [id],onDelete: Cascade)
      gameId String
      content String 
      Likes Int
@@ -71,7 +80,7 @@ model Review {
 model Cart {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
        userId String
-       user User @relation(fields: [userId], references: [id])
+       user User @relation(fields: [userId], references: [id],onDelete: Cascade)
        items CartItem[]
        createdAt DateTime @default(now())
        updatedAt DateTime @updatedAt
@@ -81,7 +90,7 @@ model Cart {
 model CartItem{
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
          cartId String
-         cart Cart @relation(fields: [cartId],references: [id])
+         cart Cart @relation(fields: [cartId],references: [id],onDelete: Cascade)
          prodcutId String
          quantity Int
          price Float
@@ -103,7 +112,7 @@ model Order{
 model OrderItem{
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
           orderId String
-          order Order @relation(fields: [orderId],references: [id])
+          order Order @relation(fields: [orderId],references: [id],onDelete: Cascade)
           productId String
           quantity Int
           price Float
@@ -114,7 +123,7 @@ model OrderItem{
 model SearchHistory {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
             userId String
-            user User @relation(fields: [userId],references: [id])
+            user User @relation(fields: [userId],references: [id],onDelete: Cascade)
             search Search[]
 
 
@@ -123,7 +132,7 @@ model SearchHistory {
 model Search{
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
             searchId String
-            searchHitory SearchHistory @relation(fields: [searchId],references: [id])
+            searchHitory SearchHistory @relation(fields: [searchId],references: [id],onDelete: Cascade)
             searchQuery String 
 
 }

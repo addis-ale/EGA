@@ -1,8 +1,7 @@
 import prisma from "@/lib/prismadb";
 
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/actions/getCurrentUser";
 
 const gameSchema = z.object({
   id: z.string().uuid().optional(),
@@ -13,12 +12,10 @@ const gameSchema = z.object({
   price: z.number().min(0, "price should be postive number"),
   discountPrice: z.number().min(0, "postive number"),
   ageLimit: z.number().min(1, "age must be postive"),
+  available: z.number().min(1, "at least one item needed "),
 });
 const allowedTypes = ["TABLE_TOP", "PHYSICAL"];
 export async function POST(req: Request) {
-  const user = getCurrentUser();
-  console.log(user);
-
   try {
     const body = await req.json();
     console.log(body);
@@ -43,6 +40,7 @@ export async function POST(req: Request) {
       price: Number(body.price),
       discountPrice: Number(body.discountPrice ?? 0),
       ageLimit: Number(body.ageLimit),
+      available: Number(body.available),
     });
     if (!validation.success) {
       return NextResponse.json({
@@ -61,33 +59,87 @@ export async function POST(req: Request) {
       price,
       discountPrice,
       ageLimit,
+      available,
     } = validation.data;
-    await prisma.$connect();
-    const game = await prisma.game.create({
-      data: {
-        gameName,
-        type,
-        imageUrl: imageUrl || null,
-        videoUrl: videoUrl || null,
-        price,
-        discountPrice,
-        ageLimit,
-      },
+    await prisma.$connect().catch((error) => {
+      throw new Error("dc connection failed" + error);
     });
-    console.log(game);
-    if (!game) {
+    const existingGame = await prisma.game.findUnique({
+      where: { gameName: gameName },
+    });
+
+    if (existingGame) {
+      const game = await prisma.available.upsert({
+        where: { gameId: existingGame.id },
+        update: {
+          available: {
+            increment: available,
+          },
+        },
+        create: {
+          gameId: existingGame.id,
+          available: available,
+        },
+      });
       return NextResponse.json({
-        message: "error on prisma",
+        message: "game added",
+        status: 200,
+        game: game,
+      });
+    } else {
+      const game = await prisma.game.create({
+        data: {
+          gameName,
+          type,
+          imageUrl: imageUrl || null,
+          videoUrl: videoUrl || null,
+          price,
+          discountPrice,
+          ageLimit,
+        },
+      });
+
+      await prisma.available.create({
+        data: { gameId: game.id, available: available },
+      });
+      // const availableGame = await prisma.game.findMany({
+      //   where: { gameName: gameName, ageLimit: ageLimit },
+      // });
+
+      // await prisma.game.updateMany({
+      //   where: { gameName: gameName, ageLimit: ageLimit },
+      //   data: {
+      //     available: availableGame.length + available,
+      //   },
+      // });
+
+      console.log(game);
+      if (!game) {
+        return NextResponse.json({
+          message: "error on prisma",
+        });
+      }
+      return NextResponse.json({
+        message: "game created succesuflly",
+        status: 201,
+        data: game,
+      });
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      return NextResponse.json({
+        detail: error.message,
+        status: 500,
+      });
+    }
+    if (error instanceof ZodError) {
+      return NextResponse.json({
+        error: error.flatten().fieldErrors,
+        status: 409,
       });
     }
     return NextResponse.json({
-      message: "game created succesuflly",
-      status: 201,
-      data: game,
-    });
-  } catch (error) {
-    return NextResponse.json({
-      detail: error,
+      error: "server error",
       status: 500,
     });
   }
