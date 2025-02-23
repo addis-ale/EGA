@@ -76,7 +76,7 @@ export async function GET(req: Request) {
 
     if (priceRange) {
       const [minValue, maxValue] = priceRange.split("-").map(Number);
-      filters.price = { gte: { minValue, lte: maxValue } };
+      filters.price = { gte: minValue, lte: maxValue };
     }
     if (publishedData) {
       filters.createdAt = { gte: publishedData };
