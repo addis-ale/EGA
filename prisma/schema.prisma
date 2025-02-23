@@ -45,6 +45,9 @@ model Game {
   discountPrice  Int
   price        Int
   ageLimit  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  available Int
   review  Review[]
 
 
@@ -60,6 +63,8 @@ model Review {
      Likes Int
      disLikes  Int 
      rating Int @default(1)
+      createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
 }
 
