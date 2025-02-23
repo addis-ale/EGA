@@ -1,9 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import type React from "react";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,28 +16,31 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import Image from "next/image";
+import { ImageIcon, Video, ArrowLeft, Loader2 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { updateProduct } from "@/state/features/createPostSlice";
 import type { RootState } from "@/state/store";
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   uploadedCoverImage: z.string().min(1, "Cover image is required."),
   uploadedVideo: z.string().min(1, "Video is required."),
 });
 
-interface UploadResult {
-  secure_url: string;
+declare global {
+  interface Window {
+    cloudinary: any;
+  }
 }
 
-export default function StepTwo() {
+export default function MediaUpload() {
   const router = useRouter();
   const { toast } = useToast();
   const dispatch = useDispatch();
 
-  // Get existing media from Redux state
   const existingMedia = useSelector((state: RootState) => ({
     coverImage: state.createPost.uploadedCoverImage,
     video: state.createPost.uploadedVideo,
@@ -51,6 +53,10 @@ export default function StepTwo() {
     existingMedia.video || null
   );
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [videoLoading, setVideoLoading] = useState(false);
+  const [widgetInstance, setWidgetInstance] = useState<any>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -60,120 +66,200 @@ export default function StepTwo() {
     },
   });
 
-  async function uploadFile(file: File, type: "image" | "video") {
-    try {
-      setIsUploading(true);
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", "EGA Store");
-      formData.append("resource_type", type);
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://upload-widget.cloudinary.com/global/all.js";
+    script.async = true;
+    document.body.appendChild(script);
 
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/upload`,
-        {
-          method: "POST",
-          body: formData,
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  const openCloudinaryWidget = (mediaType: "image" | "video") => {
+    if (typeof window.cloudinary === "undefined") {
+      console.error("Cloudinary widget is not loaded");
+      return;
+    }
+
+    const uploadPreset = "EGA Store";
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+
+    if (!cloudName) {
+      console.error("Cloudinary cloud name is not set");
+      return;
+    }
+
+    const options = {
+      cloudName,
+      uploadPreset,
+      sources: [
+        "local",
+        "url",
+        "camera",
+        "dropbox",
+        "google_drive",
+        "facebook",
+        "instagram",
+        "shutterstock",
+        "getty",
+        "istock",
+        "unsplash",
+      ],
+      multiple: false,
+      resourceType: mediaType,
+      maxFiles: 1,
+    };
+
+    const widget = window.cloudinary.createUploadWidget(
+      options,
+      async (error: any, result: any) => {
+        if (!error && result) {
+          if (result.event === "success") {
+            const secureUrl = result.info.secure_url;
+
+            if (mediaType === "image") {
+              setImageLoading(true);
+              // Preload image
+              const img = new window.Image();
+              img.onload = () => {
+                setUploadedCoverImage(secureUrl);
+                form.setValue("uploadedCoverImage", secureUrl);
+                dispatch(updateProduct({ uploadedCoverImage: secureUrl }));
+                setImageLoading(false);
+                widget.close();
+                toast({
+                  title: "Image uploaded",
+                  description: "Your image has been uploaded successfully.",
+                });
+              };
+              img.src = secureUrl;
+            } else {
+              setVideoLoading(true);
+              // Check if video is ready
+              const video = document.createElement("video");
+              video.onloadeddata = () => {
+                setUploadedVideo(secureUrl);
+                form.setValue("uploadedVideo", secureUrl);
+                dispatch(updateProduct({ uploadedVideo: secureUrl }));
+                setVideoLoading(false);
+                widget.close();
+                toast({
+                  title: "Video uploaded",
+                  description: "Your video has been uploaded successfully.",
+                });
+              };
+              video.src = secureUrl;
+            }
+          } else if (result.event === "close") {
+            setWidgetInstance(null);
+          }
         }
-      );
-
-      if (!response.ok) {
-        throw new Error("Upload failed");
       }
+    );
 
-      const result: UploadResult = await response.json();
-      return result.secure_url;
-    } catch (error) {
-      console.error("Upload error:", error);
-      toast({
-        title: "Upload Error",
-        description: "Failed to upload file. Please try again.",
-        variant: "destructive",
-      });
-      return null;
-    } finally {
-      setIsUploading(false);
-    }
-  }
-
-  const handleImageUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const url = await uploadFile(file, "image");
-    if (url) {
-      setUploadedCoverImage(url);
-      form.setValue("uploadedCoverImage", url);
-      dispatch(updateProduct({ uploadedCoverImage: url }));
-    }
+    setWidgetInstance(widget);
+    widget.open();
   };
 
-  const handleVideoUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        widgetInstance &&
+        !(event.target as HTMLElement).closest(".cloudinary-widget") &&
+        !(event.target as HTMLElement).closest(".upload-trigger")
+      ) {
+        widgetInstance.close();
+        setWidgetInstance(null);
+      }
+    };
 
-    const url = await uploadFile(file, "video");
-    if (url) {
-      setUploadedVideo(url);
-      form.setValue("uploadedVideo", url);
-      dispatch(updateProduct({ uploadedVideo: url }));
-    }
-  };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [widgetInstance]);
 
   function onSubmit(data: z.infer<typeof formSchema>) {
+    dispatch(
+      updateProduct({
+        uploadedCoverImage: uploadedCoverImage || "",
+        uploadedVideo: uploadedVideo || "",
+      })
+    );
+
     toast({
       title: "Files uploaded successfully",
-      description: (
-        <div>
-          <strong>Cover Image:</strong> {uploadedCoverImage || "None"} <br />
-          <strong>Video:</strong> {uploadedVideo || "None"}
-        </div>
-      ),
+      description: "Your media files have been saved.",
     });
 
     router.push("/dashboard/createpost/step3");
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-white">
-      <Card className="w-full max-w-6xl bg-white shadow-lg rounded-lg">
-        <CardContent className="p-6">
-          <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
-            Media Upload
-          </h1>
+    <div className="min-h-screen  p-4 flex items-center justify-center">
+      <Card className="w-full max-w-6xl bg-white/80 backdrop-blur-sm shadow-xl rounded-xl border-0">
+        <CardContent className="p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-900">Media Upload</h1>
+            <p className="text-muted-foreground mt-2">
+              Upload your cover image and video
+            </p>
+          </div>
+
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid gap-6 md:grid-cols-2">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Image Upload */}
                 <FormField
                   control={form.control}
                   name="uploadedCoverImage"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-lg font-semibold text-gray-700">
+                      <FormLabel className="text-lg font-semibold">
                         Cover Image
                       </FormLabel>
                       <FormControl>
-                        <div className="w-full h-[200px] relative">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                            disabled={isUploading}
-                          />
-                          <div className="w-full h-full border-2 border-dashed border-gray-400 rounded-md flex flex-col items-center justify-center">
-                            <p className="text-gray-600">
-                              {isUploading
-                                ? "Uploading..."
-                                : "Click to upload cover image"}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              PNG, JPG, WEBP
-                            </p>
-                          </div>
+                        <div
+                          className={`
+                            aspect-video rounded-xl border-2 border-dashed
+                            ${
+                              uploadedCoverImage
+                                ? "border-0"
+                                : "border-gray-300 hover:border-gray-400"
+                            }
+                            transition-all duration-300
+                            flex flex-col items-center justify-center overflow-hidden relative
+                            cursor-pointer upload-trigger
+                          `}
+                          onClick={() => openCloudinaryWidget("image")}
+                        >
+                          {uploadedCoverImage ? (
+                            <>
+                              <Image
+                                src={uploadedCoverImage || "/placeholder.svg"}
+                                alt="Preview"
+                                fill
+                                className={`object-cover transition-opacity duration-300 ${
+                                  imageLoading ? "opacity-50" : "opacity-100"
+                                }`}
+                              />
+                              {imageLoading && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                                  <Loader2 className="w-8 h-8 animate-spin text-white" />
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="text-center p-8">
+                              <ImageIcon className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                              <p className="text-gray-600">
+                                Click to upload image
+                              </p>
+                              <p className="text-sm text-gray-500 mt-1">
+                                All image formats supported
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -181,33 +267,58 @@ export default function StepTwo() {
                   )}
                 />
 
+                {/* Video Upload */}
                 <FormField
                   control={form.control}
                   name="uploadedVideo"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-lg font-semibold text-gray-700">
+                      <FormLabel className="text-lg font-semibold">
                         Video
                       </FormLabel>
                       <FormControl>
-                        <div className="w-full h-[200px] relative">
-                          <input
-                            type="file"
-                            accept="video/*"
-                            onChange={handleVideoUpload}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                            disabled={isUploading}
-                          />
-                          <div className="w-full h-full border-2 border-dashed border-gray-400 rounded-md flex flex-col items-center justify-center">
-                            <p className="text-gray-600">
-                              {isUploading
-                                ? "Uploading..."
-                                : "Click to upload video"}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              MP4, WEBM, OGG
-                            </p>
-                          </div>
+                        <div
+                          className={`
+                            aspect-video rounded-xl border-2 border-dashed
+                            ${
+                              uploadedVideo
+                                ? "border-0"
+                                : "border-gray-300 hover:border-gray-400"
+                            }
+                            transition-all duration-300
+                            flex flex-col items-center justify-center overflow-hidden relative
+                            cursor-pointer upload-trigger
+                          `}
+                          onClick={() => openCloudinaryWidget("video")}
+                        >
+                          {uploadedVideo ? (
+                            <>
+                              <video
+                                src={uploadedVideo}
+                                controls
+                                className={`w-full h-full object-cover transition-opacity duration-300 ${
+                                  videoLoading ? "opacity-50" : "opacity-100"
+                                }`}
+                              >
+                                Your browser does not support the video tag.
+                              </video>
+                              {videoLoading && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                                  <Loader2 className="w-8 h-8 animate-spin text-white" />
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="text-center p-8">
+                              <Video className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                              <p className="text-gray-600">
+                                Click to upload video
+                              </p>
+                              <p className="text-sm text-gray-500 mt-1">
+                                All video formats supported
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -216,59 +327,39 @@ export default function StepTwo() {
                 />
               </div>
 
-              {(uploadedCoverImage || uploadedVideo) && (
-                <div className="space-y-6">
-                  {uploadedCoverImage && (
-                    <div>
-                      <h2 className="text-lg font-semibold text-gray-700">
-                        Cover Image Preview
-                      </h2>
-                      <div className="w-full h-[200px] relative rounded-md overflow-hidden">
-                        <Image
-                          src={uploadedCoverImage || "/placeholder.svg"}
-                          alt="Cover Image Preview"
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {uploadedVideo && (
-                    <div>
-                      <h2 className="text-lg font-semibold text-gray-700">
-                        Video Preview
-                      </h2>
-                      <div className="w-full h-[200px] relative rounded-md overflow-hidden">
-                        <video
-                          src={uploadedVideo}
-                          controls
-                          className="w-full h-full object-cover"
-                        >
-                          Your browser does not support the video tag.
-                        </video>
-                      </div>
-                    </div>
-                  )}
+              {uploadProgress > 0 && (
+                <div className="space-y-2">
+                  <Progress value={uploadProgress} className="h-2" />
+                  <p className="text-sm text-center text-muted-foreground">
+                    Uploading... {uploadProgress}%
+                  </p>
                 </div>
               )}
 
-              <div className="flex gap-4 w-full mt-6">
+              <div className="flex gap-4 pt-4">
                 <Button
                   type="button"
                   variant="outline"
                   className="flex-1"
                   onClick={() => router.push("/dashboard/createpost/step1")}
                 >
-                  Previous
+                  <ArrowLeft className="w-4 h-4 mr-2" /> Previous
                 </Button>
                 <Button
                   type="submit"
-                  className="flex-1 bg-green-500 hover:bg-green-600 text-white"
-                  disabled={isUploading}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
+                  disabled={
+                    isUploading || !uploadedCoverImage || !uploadedVideo
+                  }
                 >
-                  {isUploading ? "Uploading..." : "Save & Continue"}
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                      Uploading...
+                    </>
+                  ) : (
+                    "Save & Continue"
+                  )}
                 </Button>
               </div>
             </form>
