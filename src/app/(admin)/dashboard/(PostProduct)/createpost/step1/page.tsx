@@ -16,8 +16,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { updateProduct } from "@/state/features/createPostSlice";
+import { useRouter } from "next/navigation";
+import { RootState } from "@/state/store";
 
 export default function CreatePostStep1() {
   // Define the Zod schema for validation
@@ -32,17 +34,21 @@ export default function CreatePostStep1() {
   });
 
   // Use react-hook-form with Zod resolver
+  const product = useSelector((state: RootState) => state.createPost);
+  const { productName, productDescription } = product;
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
     defaultValues: {
-      productName: "",
-      productDescription: "",
+      productName: productName,
+      productDescription: productDescription,
     },
   });
   const dispatch = useDispatch();
-  // Handle form submission
+  const router = useRouter();
+
   function onSubmit(values: z.infer<typeof productSchema>) {
-    dispatch(updateProduct(values));
+    dispatch(updateProduct({ ...product, ...values }));
+    router.push("/dashboard/createpost/step2");
     console.log(values);
   }
 

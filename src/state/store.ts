@@ -1,23 +1,29 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { persistStore, persistReducer } from "redux-persist";
 import storage from "redux-persist/lib/storage"; // Defaults to localStorage for web
-import createPostReducer from "./features/createPostSlice"; // Import your slice
-import currentUserState from "./features/currentUserSlice";
+import createPostReducer from "./features/createPostSlice"; // Your persisted slice
+import currentUserState from "./features/currentUserSlice"; // Non-persisted slice
+import { combineReducers } from "redux";
+
 // Configuration for Redux Persist
 const persistConfig = {
   key: "root",
-  storage, // Use localStorage
+  storage,
+  whitelist: ["createPost"], // Only persist createPost
 };
 
-// Wrap reducer with persistReducer
-const persistedReducer = persistReducer(persistConfig, createPostReducer);
+// Combine reducers
+const rootReducer = combineReducers({
+  createPost: createPostReducer, // Persisted reducer
+  currentUser: currentUserState, // Non-persisted reducer
+});
+
+// Wrap rootReducer with persistReducer
+const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 // Create the store
 export const store = configureStore({
-  reducer: {
-    createPost: persistedReducer,
-    currentUser: currentUserState,
-  },
+  reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false, // Disable serializability check for redux-persist
