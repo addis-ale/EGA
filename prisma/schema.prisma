@@ -122,7 +122,7 @@ model OrderItem{
 }
 model SearchHistory {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
-            userId String
+            userId String   @unique
             user User @relation(fields: [userId],references: [id],onDelete: Cascade)
             search Search[]
 
