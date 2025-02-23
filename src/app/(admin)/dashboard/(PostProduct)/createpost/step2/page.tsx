@@ -73,7 +73,15 @@ function Dropzone({
 
 export default function StepTwo() {
   const product = useSelector((state: RootState) => state.createPost);
-  const { video, coverImage } = product;
+  const { video, coverImage, productName, productDescription } = product;
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!productName || !productDescription) {
+      router.push("/dashboard/createpost/step1"); // Redirect if Step 1 is incomplete
+    }
+  }, [productName, productDescription, router]);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -90,32 +98,31 @@ export default function StepTwo() {
   const [uploadedVideo, setUploadedVideo] = useState<string | null>(null);
 
   useEffect(() => {
-    // If cover image exists in Redux, set the object URL or use it directly if it's a URL
+    let coverImageUrl: string | null = null;
+    let videoUrl: string | null = null;
+
     if (coverImage instanceof File) {
-      setUploadedCoverImage(URL.createObjectURL(coverImage));
-    } else if (coverImage) {
-      setUploadedCoverImage(coverImage); // If it's already a URL
+      coverImageUrl = URL.createObjectURL(coverImage);
+      setUploadedCoverImage(coverImageUrl);
+    } else if (typeof coverImage === "string") {
+      setUploadedCoverImage(coverImage); // Keep existing URL if it's already a string
     }
 
-    // If video exists in Redux, set the object URL or use it directly if it's a URL
     if (video instanceof File) {
-      setUploadedVideo(URL.createObjectURL(video));
-    } else if (video) {
-      setUploadedVideo(video); // If it's already a URL
+      videoUrl = URL.createObjectURL(video);
+      setUploadedVideo(videoUrl);
+    } else if (typeof video === "string") {
+      setUploadedVideo(video);
     }
 
     return () => {
-      // Clean up the object URLs to avoid memory leaks
-      if (uploadedCoverImage) URL.revokeObjectURL(uploadedCoverImage);
-      if (uploadedVideo) URL.revokeObjectURL(uploadedVideo);
+      if (coverImageUrl) URL.revokeObjectURL(coverImageUrl);
+      if (videoUrl) URL.revokeObjectURL(videoUrl);
     };
-  }, [coverImage, video, uploadedCoverImage, uploadedVideo]);
+  }, [coverImage, video]); // Removed uploadedCoverImage and uploadedVideo to prevent re-renders
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    // Check if both files are uploaded, if not show a toast
-
-    //dispatch the file
-
+    console.log(values);
     if (!values.coverImage) {
       toast({
         title: "Error",
@@ -124,6 +131,7 @@ export default function StepTwo() {
       });
       return;
     }
+
     if (!values.video) {
       toast({
         title: "Error",
@@ -132,6 +140,7 @@ export default function StepTwo() {
       });
       return;
     }
+
     dispatch(updateProduct({ ...product, ...values }));
     toast({
       title: "You submitted the following files:",
@@ -142,6 +151,7 @@ export default function StepTwo() {
         </div>
       ),
     });
+
     router.push("/dashboard/createpost/step3");
   }
 
@@ -159,7 +169,7 @@ export default function StepTwo() {
           });
         } else if (fieldName === "video") {
           setUploadedVideo((prev) => {
-            if (prev) URL.revokeObjectURL(prev);
+            if (prev) URL.revokeObjectURL(prev); // Clean up previous object URL
             return URL.createObjectURL(file);
           });
         }
@@ -167,164 +177,164 @@ export default function StepTwo() {
     },
     [form]
   );
-  const router = useRouter();
-
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-white">
-      <Card className="w-full max-w-6xl bg-white shadow-lg rounded-lg">
-        <CardContent className="p-6">
-          <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
-            Media Upload
-          </h1>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div
-                className={`grid gap-6 ${
-                  !uploadedCoverImage && !uploadedVideo
-                    ? "md:grid-cols-2"
-                    : "md:flex md:flex-row"
-                }`}
+  if (productName && productDescription)
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-white">
+        <Card className="w-full max-w-6xl bg-white shadow-lg rounded-lg">
+          <CardContent className="p-6">
+            <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
+              Media Upload
+            </h1>
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-6"
               >
-                {/* Dropzones */}
                 <div
-                  className={`space-y-6 md:space-y-0 ${
+                  className={`grid gap-6 ${
                     !uploadedCoverImage && !uploadedVideo
-                      ? "md:col-span-2 md:grid md:grid-cols-2 md:gap-6"
-                      : "flex-1"
+                      ? "md:grid-cols-2"
+                      : "md:flex md:flex-row"
                   }`}
                 >
-                  {/* Cover Image Dropzone */}
-                  <FormField
-                    control={form.control}
-                    name="coverImage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-lg font-semibold text-gray-700">
-                          Cover Image
-                        </FormLabel>
-                        <FormControl>
-                          <Dropzone
-                            onDrop={(files) => onDrop(files, "coverImage")}
-                            accept={ACCEPTED_IMAGE_TYPES}
-                            maxSize={MAX_FILE_SIZE}
-                          >
-                            {({ getRootProps, getInputProps }) => (
-                              <div
-                                {...getRootProps()}
-                                className="w-full h-[200px] p-4 border-2 border-dashed border-gray-400 rounded-md text-center cursor-pointer hover:bg-gray-100 flex flex-col justify-center"
-                              >
-                                <input {...getInputProps()} />
-                                <p className="text-gray-600">
-                                  Click to upload or drag & drop
-                                </p>
-                                <p className="text-sm text-gray-500">
-                                  PNG, JPG, WEBP (MAX. 5MB)
-                                </p>
-                              </div>
-                            )}
-                          </Dropzone>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div
+                    className={`space-y-6 md:space-y-0 ${
+                      !uploadedCoverImage && !uploadedVideo
+                        ? "md:col-span-2 md:grid md:grid-cols-2 md:gap-6"
+                        : "flex-1"
+                    }`}
+                  >
+                    {/* Cover Image Dropzone */}
+                    <FormField
+                      control={form.control}
+                      name="coverImage"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-lg font-semibold text-gray-700">
+                            Cover Image
+                          </FormLabel>
+                          <FormControl>
+                            <Dropzone
+                              onDrop={(files) => onDrop(files, "coverImage")}
+                              accept={ACCEPTED_IMAGE_TYPES}
+                              maxSize={MAX_FILE_SIZE}
+                            >
+                              {({ getRootProps, getInputProps }) => (
+                                <div
+                                  {...getRootProps()}
+                                  className="w-full h-[200px] p-4 border-2 border-dashed border-gray-400 rounded-md text-center cursor-pointer hover:bg-gray-100 flex flex-col justify-center"
+                                >
+                                  <input {...getInputProps()} />
+                                  <p className="text-gray-600">
+                                    Click to upload or drag & drop
+                                  </p>
+                                  <p className="text-sm text-gray-500">
+                                    PNG, JPG, WEBP (MAX. 5MB)
+                                  </p>
+                                </div>
+                              )}
+                            </Dropzone>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  {/* Video Dropzone */}
-                  <FormField
-                    control={form.control}
-                    name="video"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-lg font-semibold text-gray-700">
-                          Video
-                        </FormLabel>
-                        <FormControl>
-                          <Dropzone
-                            onDrop={(files) => onDrop(files, "video")}
-                            accept={ACCEPTED_VIDEO_TYPES}
-                            maxSize={MAX_FILE_SIZE * 10}
-                          >
-                            {({ getRootProps, getInputProps }) => (
-                              <div
-                                {...getRootProps()}
-                                className="w-full h-[200px] p-4 border-2 border-dashed border-gray-400 rounded-md text-center cursor-pointer hover:bg-gray-100 flex flex-col justify-center"
-                              >
-                                <input {...getInputProps()} />
-                                <p className="text-gray-600">
-                                  Click to upload or drag & drop
-                                </p>
-                                <p className="text-sm text-gray-500">
-                                  MP4, WEBM, OGG (MAX. 50MB)
-                                </p>
-                              </div>
-                            )}
-                          </Dropzone>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    {/* Video Dropzone */}
+                    <FormField
+                      control={form.control}
+                      name="video"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-lg font-semibold text-gray-700">
+                            Video
+                          </FormLabel>
+                          <FormControl>
+                            <Dropzone
+                              onDrop={(files) => onDrop(files, "video")}
+                              accept={ACCEPTED_VIDEO_TYPES}
+                              maxSize={MAX_FILE_SIZE * 10}
+                            >
+                              {({ getRootProps, getInputProps }) => (
+                                <div
+                                  {...getRootProps()}
+                                  className="w-full h-[200px] p-4 border-2 border-dashed border-gray-400 rounded-md text-center cursor-pointer hover:bg-gray-100 flex flex-col justify-center"
+                                >
+                                  <input {...getInputProps()} />
+                                  <p className="text-gray-600">
+                                    Click to upload or drag & drop
+                                  </p>
+                                  <p className="text-sm text-gray-500">
+                                    MP4, WEBM, OGG (MAX. 50MB)
+                                  </p>
+                                </div>
+                              )}
+                            </Dropzone>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Previews (only rendered if there's content) */}
+                  {(uploadedCoverImage || uploadedVideo) && (
+                    <div className="space-y-6 flex-1">
+                      {uploadedCoverImage && (
+                        <div>
+                          <h2 className="text-lg font-semibold text-gray-700">
+                            Cover Image Preview
+                          </h2>
+                          <div className="w-full h-[200px] relative rounded-md overflow-hidden">
+                            <Image
+                              src={uploadedCoverImage}
+                              alt="Cover Image Preview"
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {uploadedVideo && (
+                        <div>
+                          <h2 className="text-lg font-semibold text-gray-700">
+                            Video Preview
+                          </h2>
+                          <div className="w-full h-[200px] relative rounded-md overflow-hidden">
+                            <video
+                              src={uploadedVideo}
+                              controls
+                              className="w-full h-full object-cover"
+                            >
+                              Your browser does not support the video tag.
+                            </video>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                {/* Previews (only rendered if there's content) */}
-                {(uploadedCoverImage || uploadedVideo) && (
-                  <div className="space-y-6 flex-1">
-                    {uploadedCoverImage && (
-                      <div>
-                        <h2 className="text-lg font-semibold text-gray-700 ">
-                          Cover Image Preview
-                        </h2>
-                        <div className="w-full h-[200px] relative rounded-md overflow-hidden">
-                          <Image
-                            src={uploadedCoverImage || "/placeholder.svg"}
-                            alt="Cover Image Preview"
-                            fill
-                            className="object-cover "
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {uploadedVideo && (
-                      <div>
-                        <h2 className="text-lg font-semibold text-gray-700 ">
-                          Video Preview
-                        </h2>
-                        <div className="w-full h-[200px] relative rounded-md overflow-hidden">
-                          <video
-                            src={uploadedVideo || "/placeholder.mp3"}
-                            controls
-                            className="w-full h-full object-cover"
-                          >
-                            Your browser does not support the video tag.
-                          </video>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-4 w-full mt-6">
-                <Button
-                  type="button"
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-black font-semibold py-3 rounded-md border"
-                  onClick={() => router.push("/dashboard/createpost/step1")}
-                >
-                  Preview
-                </Button>
-                <Button
-                  type="submit"
-                  className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-md"
-                  onClick={() => form.handleSubmit(onSubmit)()}
-                >
-                  Save & Continue
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-    </div>
-  );
+                <div className="flex gap-4 w-full mt-6">
+                  <Button
+                    type="button"
+                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-black font-semibold rounded-md border py-1 sm:py-2 md:py-6"
+                    onClick={() => router.push("/dashboard/createpost/step1")}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-1 sm:py-2 md:py-6 rounded-md"
+                  >
+                    Save & Continue
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
+    );
 }

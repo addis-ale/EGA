@@ -26,6 +26,21 @@ const productSchema = z.object({
       message: "Video is required.",
     })
     .optional(), // Optional for video
+  price: z.number().min(0, "Price must be posetive number"),
+
+  discountPercentage: z
+    .number()
+    .min(0, "Discount must be positive")
+    .max(100, "Discount cannot exceed 100%"),
+
+  ageRestriction: z.enum(["all", "13", "15", "18"], {
+    required_error: "Please select an age restriction",
+  }),
+  gameType: z.string().min(1, "Please select a game type"),
+  availableProduct: z
+    .number()
+    .int()
+    .min(1, "Available product must be a atleast one"),
 });
 
 type ProductState = z.infer<typeof productSchema>;
@@ -36,6 +51,11 @@ const initialState: ProductState = {
   productDescription: "",
   coverImage: undefined,
   video: undefined,
+  price: 0,
+  discountPercentage: 0,
+  ageRestriction: "all",
+  gameType: "Table Game",
+  availableProduct: 0,
 };
 
 // Create the slice
@@ -47,8 +67,13 @@ export const createPostSlice = createSlice({
     updateProduct: (state, action: PayloadAction<ProductState>) => {
       state.productName = action.payload.productName;
       state.productDescription = action.payload.productDescription;
-      state.coverImage = action.payload.coverImage;
-      state.video = action.payload.video;
+      state.coverImage = action.payload.coverImage || state.coverImage;
+      state.video = action.payload.video || state.video;
+      state.price = action.payload.price;
+      state.discountPercentage = action.payload.discountPercentage;
+      state.ageRestriction = action.payload.ageRestriction;
+      state.availableProduct = action.payload.availableProduct;
+      state.gameType = action.payload.gameType;
     },
 
     // Reset state to its initial values
@@ -57,6 +82,11 @@ export const createPostSlice = createSlice({
       state.productDescription = "";
       state.coverImage = undefined;
       state.video = undefined;
+      state.price = 0;
+      state.discountPercentage = 0;
+      state.ageRestriction = "all";
+      state.gameType = "Table Game";
+      state.availableProduct = 1;
     },
   },
 });
