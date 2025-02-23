@@ -40,7 +40,6 @@ export const authOptions: AuthOptions = {
           return null;
         }
 
-        // Any object returned will be saved in `user` property of the JWT
         return {
           id: existedUser.id,
           name: existedUser.userName,
@@ -53,7 +52,6 @@ export const authOptions: AuthOptions = {
   callbacks: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async jwt({ token, user }: { token: any; user?: any }) {
-      // Persist the OAuth access_token and or the user id to the token right after signin
       if (user) {
         return {
           ...token,
