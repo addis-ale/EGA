@@ -28,7 +28,7 @@ const items = [
   },
   {
     title: "Create Post",
-    url: "/dashboard/createpost",
+    url: "/dashboard/createpost/step1",
     icon: PlusCircle,
   },
   {

@@ -1,0 +1,125 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { Check, FileText, Image, MessageSquare, Send } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+const steps = [
+  {
+    name: "Details",
+    path: "/dashboard/createpost/step1",
+    icon: FileText,
+    description: "Basic information about your post",
+  },
+  {
+    name: "Media",
+    path: "/dashboard/createpost/step2",
+    icon: Image,
+    description: "Add images or videos to your post",
+  },
+  {
+    name: "Content",
+    path: "/dashboard/createpost/step3",
+    icon: MessageSquare,
+    description: "Write your post content",
+  },
+  {
+    name: "Review",
+    path: "/dashboard/createpost/review",
+    icon: Send,
+    description: "Review and publish your post",
+  },
+];
+
+export default function CreatePostNav() {
+  const pathname = usePathname();
+
+  const currentIndex = steps.findIndex((step) => step.path === pathname);
+
+  return (
+    <div className="fixed top-1/2 right-6 -translate-y-1/2 flex flex-col items-end animate-float">
+      <nav className="py-6 px-4" aria-label="Post creation progress">
+        <div className="relative flex flex-col items-center space-y-8">
+          {steps.map((step, index) => {
+            const StepIcon = step.icon;
+            const isCompleted = index < currentIndex;
+            const isCurrent = index === currentIndex;
+            // const showActiveLine =
+            //   index < currentIndex || index === currentIndex;
+
+            return (
+              <div
+                key={step.path}
+                className="relative flex flex-col items-center"
+              >
+                {/* Connecting Line */}
+                {index > 0 && (
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[2px] h-8 -translate-y-8">
+                    <div
+                      className={cn(
+                        "h-full w-full transition-all duration-500",
+                        index <= currentIndex ? "bg-teal" : "bg-muted"
+                      )}
+                    />
+                  </div>
+                )}
+
+                {/* Step Circle */}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href={step.path}
+                        className={cn(
+                          "relative z-10 flex items-center justify-center w-14 h-14 rounded-full transition-all duration-500",
+                          "border-[3px] hover:scale-110",
+                          isCompleted || isCurrent
+                            ? "border-teal text-teal"
+                            : "border-muted-foreground/20 text-muted-foreground hover:border-muted-foreground/50",
+                          isCurrent && "animate-pulse-slow",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        )}
+                        aria-current={isCurrent ? "step" : undefined}
+                      >
+                        {isCompleted ? (
+                          <Check className="w-6 h-6 animate-in fade-in-50 duration-300" />
+                        ) : (
+                          <StepIcon className="w-6 h-6" />
+                        )}
+                        <span className="sr-only">{step.name}</span>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="flex flex-col gap-1">
+                      <p className="font-medium">{step.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {step.description}
+                      </p>
+                      <p className="text-xs font-medium">
+                        {isCompleted ? (
+                          <span className="text-primary">Completed</span>
+                        ) : isCurrent ? (
+                          <span className="text-primary">Current step</span>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            Not started
+                          </span>
+                        )}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            );
+          })}
+        </div>
+      </nav>
+    </div>
+  );
+}

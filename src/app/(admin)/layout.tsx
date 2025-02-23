@@ -6,9 +6,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="bg-white">
       <SidebarProvider>
         <AdminSidebar />
-        <main>
-          <SidebarTrigger />
-
+        <SidebarTrigger />
+        <main className="flex items-center justify-center mx-auto my-auto max-w-4xl min-h-screen">
           {children}
         </main>
       </SidebarProvider>
