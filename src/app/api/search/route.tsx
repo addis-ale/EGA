@@ -7,19 +7,30 @@ const searchSchama = z.object({
   publishedAt: z.enum(["Today", "Last week", "Last month"]).optional(),
   age: z.string().optional(),
   alphabet: z.string().optional(),
+  userId: z.string().nullable(),
+  type: z.enum(["TABLE_TOP", "PHYSICAL"]).optional(),
 });
 
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
-    const { priceRange, publishedAt, age, alphabet, searchQuery } =
-      Object.fromEntries(url.searchParams);
+    const {
+      priceRange,
+      publishedAt,
+      age,
+      alphabet,
+      userId,
+      searchQuery,
+      type,
+    } = Object.fromEntries(url.searchParams);
     const validation = searchSchama.safeParse({
       priceRange,
       publishedAt,
       age,
       alphabet,
       searchQuery,
+      userId,
+      type,
     });
     if (!validation.success) {
       return NextResponse.json({
@@ -46,6 +57,7 @@ export async function GET(req: Request) {
     }
 
     console.log(publishedData);
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filters: any = {};
     const gameNameFilter = [];
@@ -56,8 +68,12 @@ export async function GET(req: Request) {
       gameNameFilter.push({ contains: alphabet, mode: "insensitive" });
     }
     if (gameNameFilter.length > 0) {
-      filters.AND = gameNameFilter;
+      filters.OR = gameNameFilter;
     }
+    if (type) {
+      filters.type = type;
+    }
+
     if (priceRange) {
       const [minValue, maxValue] = priceRange.split("-").map(Number);
       filters.price = { gte: { minValue, lte: maxValue } };
@@ -66,21 +82,7 @@ export async function GET(req: Request) {
       filters.createdAt = { gte: publishedData };
     }
     if (age) {
-      if (age === "18") {
-        filters.ageLimit = { gte: Number(age) };
-      }
-      if (age === "12") {
-        filters.ageLimit = { gte: Number(age) };
-      }
-      if (age === "16") {
-        filters.ageLimit = { gte: Number(age) };
-      }
-      if (age === "7") {
-        filters.ageLimit = { gte: Number(age) };
-      }
-      if (age === "3") {
-        filters.ageLimit = { gte: Number(age) };
-      }
+      filters.ageLimit = Number(age);
     }
     await prisma.$connect().catch((error) => {
       throw new Error(error);
@@ -88,6 +90,15 @@ export async function GET(req: Request) {
     const resultGame = await prisma.game.findMany({
       where: filters,
       orderBy: { createdAt: "desc" },
+    });
+
+    await prisma.searchHistory.create({
+      data: {
+        userId: userId,
+        search: {
+          create: { searchQuery: searchQuery },
+        },
+      },
     });
     return NextResponse.json({
       message: "success",

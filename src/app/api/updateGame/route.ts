@@ -73,7 +73,7 @@ export async function PUT(req: Request) {
     await prisma.available.update({
       where: { gameId: id },
       data: {
-        available: available,
+        ...(available && { available }),
       },
     });
     console.log(gameUpdate);
