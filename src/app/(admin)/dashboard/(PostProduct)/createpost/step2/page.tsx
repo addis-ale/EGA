@@ -41,16 +41,18 @@ export default function MediaUpload() {
   const { toast } = useToast();
   const dispatch = useDispatch();
 
-  const existingMedia = useSelector((state: RootState) => ({
-    coverImage: state.createPost.uploadedCoverImage,
-    video: state.createPost.uploadedVideo,
-  }));
-
+  const product = useSelector((state: RootState) => state.createPost);
+  const {
+    productName,
+    productDescription,
+    uploadedCoverImage: coverImage,
+    uploadedVideo: video,
+  } = product;
   const [uploadedCoverImage, setUploadedCoverImage] = useState<string | null>(
-    existingMedia.coverImage || null
+    coverImage || null
   );
   const [uploadedVideo, setUploadedVideo] = useState<string | null>(
-    existingMedia.video || null
+    video || null
   );
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -61,12 +63,19 @@ export default function MediaUpload() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      uploadedCoverImage: existingMedia.coverImage || "",
-      uploadedVideo: existingMedia.video || "",
+      uploadedCoverImage: coverImage || "",
+      uploadedVideo: video || "",
     },
   });
 
   useEffect(() => {
+    if (!productName || !productDescription) {
+      router.push("/dashboard/createpost/step1");
+    }
+    if (uploadedCoverImage || uploadedVideo) {
+      setUploadedCoverImage(uploadedCoverImage);
+      setUploadedVideo(uploadedVideo);
+    }
     const script = document.createElement("script");
     script.src = "https://upload-widget.cloudinary.com/global/all.js";
     script.async = true;
@@ -75,7 +84,13 @@ export default function MediaUpload() {
     return () => {
       document.body.removeChild(script);
     };
-  }, []);
+  }, [
+    productDescription,
+    productName,
+    router,
+    uploadedVideo,
+    uploadedCoverImage,
+  ]);
 
   const openCloudinaryWidget = (mediaType: "image" | "video") => {
     if (typeof window.cloudinary === "undefined") {
@@ -194,33 +209,36 @@ export default function MediaUpload() {
 
     router.push("/dashboard/createpost/step3");
   }
+  if (productDescription && productName)
+    return (
+      <div className="min-h-screen  p-4 flex items-center justify-center">
+        <Card className="w-full max-w-6xl bg-white/80 backdrop-blur-sm shadow-xl rounded-xl border-0">
+          <CardContent className="p-8">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold text-gray-900">Media Upload</h1>
+              <p className="text-muted-foreground mt-2">
+                Upload your cover image and video
+              </p>
+            </div>
 
-  return (
-    <div className="min-h-screen  p-4 flex items-center justify-center">
-      <Card className="w-full max-w-6xl bg-white/80 backdrop-blur-sm shadow-xl rounded-xl border-0">
-        <CardContent className="p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-900">Media Upload</h1>
-            <p className="text-muted-foreground mt-2">
-              Upload your cover image and video
-            </p>
-          </div>
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <div className="grid md:grid-cols-2 gap-8">
-                {/* Image Upload */}
-                <FormField
-                  control={form.control}
-                  name="uploadedCoverImage"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-lg font-semibold">
-                        Cover Image
-                      </FormLabel>
-                      <FormControl>
-                        <div
-                          className={`
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-8"
+              >
+                <div className="grid md:grid-cols-2 gap-8">
+                  {/* Image Upload */}
+                  <FormField
+                    control={form.control}
+                    name="uploadedCoverImage"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-lg font-semibold">
+                          Cover Image
+                        </FormLabel>
+                        <FormControl>
+                          <div
+                            className={`
                             aspect-video rounded-xl border-2 border-dashed
                             ${
                               uploadedCoverImage
@@ -231,54 +249,55 @@ export default function MediaUpload() {
                             flex flex-col items-center justify-center overflow-hidden relative
                             cursor-pointer upload-trigger
                           `}
-                          onClick={() => openCloudinaryWidget("image")}
-                        >
-                          {uploadedCoverImage ? (
-                            <>
-                              <Image
-                                src={uploadedCoverImage || "/placeholder.svg"}
-                                alt="Preview"
-                                fill
-                                className={`object-cover transition-opacity duration-300 ${
-                                  imageLoading ? "opacity-50" : "opacity-100"
-                                }`}
-                              />
-                              {imageLoading && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-                                  <Loader2 className="w-8 h-8 animate-spin text-white" />
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <div className="text-center p-8">
-                              <ImageIcon className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                              <p className="text-gray-600">
-                                Click to upload image
-                              </p>
-                              <p className="text-sm text-gray-500 mt-1">
-                                All image formats supported
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                            onClick={() => openCloudinaryWidget("image")}
+                          >
+                            {uploadedCoverImage ? (
+                              <>
+                                <Image
+                                  src={uploadedCoverImage || "/placeholder.svg"}
+                                  alt="Preview"
+                                  width={500}
+                                  height={300}
+                                  className={`object-cover transition-opacity duration-300 ${
+                                    imageLoading ? "opacity-50" : "opacity-100"
+                                  }`}
+                                />
+                                {imageLoading && (
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                                    <Loader2 className="w-8 h-8 animate-spin text-white" />
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <div className="text-center p-8">
+                                <ImageIcon className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                                <p className="text-gray-600">
+                                  Click to upload image
+                                </p>
+                                <p className="text-sm text-gray-500 mt-1">
+                                  All image formats supported
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                {/* Video Upload */}
-                <FormField
-                  control={form.control}
-                  name="uploadedVideo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-lg font-semibold">
-                        Video
-                      </FormLabel>
-                      <FormControl>
-                        <div
-                          className={`
+                  {/* Video Upload */}
+                  <FormField
+                    control={form.control}
+                    name="uploadedVideo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-lg font-semibold">
+                          Video
+                        </FormLabel>
+                        <FormControl>
+                          <div
+                            className={`
                             aspect-video rounded-xl border-2 border-dashed
                             ${
                               uploadedVideo
@@ -289,83 +308,74 @@ export default function MediaUpload() {
                             flex flex-col items-center justify-center overflow-hidden relative
                             cursor-pointer upload-trigger
                           `}
-                          onClick={() => openCloudinaryWidget("video")}
-                        >
-                          {uploadedVideo ? (
-                            <>
-                              <video
-                                src={uploadedVideo}
-                                controls
-                                className={`w-full h-full object-cover transition-opacity duration-300 ${
-                                  videoLoading ? "opacity-50" : "opacity-100"
-                                }`}
-                              >
-                                Your browser does not support the video tag.
-                              </video>
-                              {videoLoading && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-                                  <Loader2 className="w-8 h-8 animate-spin text-white" />
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <div className="text-center p-8">
-                              <Video className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                              <p className="text-gray-600">
-                                Click to upload video
-                              </p>
-                              <p className="text-sm text-gray-500 mt-1">
-                                All video formats supported
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {uploadProgress > 0 && (
-                <div className="space-y-2">
-                  <Progress value={uploadProgress} className="h-2" />
-                  <p className="text-sm text-center text-muted-foreground">
-                    Uploading... {uploadProgress}%
-                  </p>
+                            onClick={() => openCloudinaryWidget("video")}
+                          >
+                            {uploadedVideo ? (
+                              <>
+                                <video
+                                  src={uploadedVideo}
+                                  controls
+                                  className={`xl:w-[500px] xl:h-[300px] w-full h-full object-cover transition-opacity duration-300 ${
+                                    videoLoading ? "opacity-50" : "opacity-100"
+                                  }`}
+                                >
+                                  Your browser does not support the video tag.
+                                </video>
+                                {videoLoading && (
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                                    <Loader2 className="w-8 h-8 animate-spin text-white" />
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <div className="text-center p-8">
+                                <Video className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                                <p className="text-gray-600">
+                                  Click to upload video
+                                </p>
+                                <p className="text-sm text-gray-500 mt-1">
+                                  All video formats supported
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-              )}
 
-              <div className="flex gap-4 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => router.push("/dashboard/createpost/step1")}
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" /> Previous
-                </Button>
-                <Button
-                  type="submit"
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
-                  disabled={
-                    isUploading || !uploadedCoverImage || !uploadedVideo
-                  }
-                >
-                  {isUploading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
-                      Uploading...
-                    </>
-                  ) : (
-                    "Save & Continue"
-                  )}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-    </div>
-  );
+                {uploadProgress > 0 && (
+                  <div className="space-y-2">
+                    <Progress value={uploadProgress} className="h-2" />
+                    <p className="text-sm text-center text-muted-foreground">
+                      Uploading... {uploadProgress}%
+                    </p>
+                  </div>
+                )}
+
+                <div className="w-full gap-4 pt-4">
+                  <div className="flex justify-between items-center">
+                    <Button
+                      type="button"
+                      className="w-fit bg-gray-200 hover:bg-gray-300 text-black font-semibold rounded-md border py-1 sm:py-2 md:py-6"
+                      onClick={() => router.push("/dashboard/createpost/step1")}
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="w-fit py-1 sm:py-2 md:py-6  text-base sm:text-lg bg-teal hover:bg-teal/90 text-white transition-colors duration-200"
+                    >
+                      Submit & Continue
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
+    );
 }

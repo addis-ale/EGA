@@ -47,7 +47,7 @@ export default function CreatePostStep1() {
   const router = useRouter();
 
   function onSubmit(values: z.infer<typeof productSchema>) {
-    dispatch(updateProduct({ ...product, ...values }));
+    dispatch(updateProduct(values));
     router.push("/dashboard/createpost/step2");
     console.log(values);
   }

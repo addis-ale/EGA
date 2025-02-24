@@ -70,7 +70,17 @@ export const createPostSlice = createSlice({
     },
 
     // Reset state to its initial values
-    resetProduct: () => initialState,
+    resetProduct: (state) => {
+      state.productName = "";
+      state.productDescription = "";
+      state.uploadedCoverImage = ""; // Assuming you meant to reset this
+      state.uploadedVideo = ""; // Assuming you meant to reset this
+      state.discountPercentage = 0;
+      state.ageRestriction = "all";
+      state.gameType = "Table Game";
+      state.availableProduct = 0;
+      state.price = 0;
+    },
   },
 });
 
