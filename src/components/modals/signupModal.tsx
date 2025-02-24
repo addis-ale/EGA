@@ -10,7 +10,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,6 +17,8 @@ import Image from "next/image";
 import { Eye, EyeOff } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { useToast } from "@/hooks/use-toast";
+import { setUser } from "@/state/features/currentUserSlice";
+import { useDispatch } from "react-redux";
 
 // Zod Schema for Form Validation
 const signUpSchema = z.object({
@@ -40,7 +41,6 @@ export function SignUpDialog({
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const router = useRouter();
 
   const {
     register,
@@ -55,11 +55,12 @@ export function SignUpDialog({
       password: "",
     },
   });
-
+  const dispatch = useDispatch();
   const onSubmit = async (data: SignUpFormData) => {
     setIsLoading(true);
 
     try {
+      // Send user registration request
       const response = await fetch("/api/signup", {
         method: "POST",
         headers: {
@@ -68,32 +69,47 @@ export function SignUpDialog({
         body: JSON.stringify(data),
       });
 
-      if (response.status === 201) {
-        toast({
-          title: "Registration Success 🎉",
-          description: "Welcome to EGA! Redirecting...",
-          variant: "default",
-        });
-        await signIn("credentials", {
-          email: data.email,
-          password: data.password,
-          redirect: false, // Change to `true` to auto-redirect
-        });
-        onClose();
-        router.push("/");
-        router.refresh();
-      } else if (response.status === 409) {
+      if (response.status === 409) {
         toast({
           title: "User already exists!",
           description: "Try to log in",
           variant: "destructive",
         });
-      } else {
+        return;
+      }
+
+      if (response.status === 201) {
         toast({
-          title: "Something went wrong!",
-          description: "Try again later",
-          variant: "destructive",
+          title: "Registration Success 🎉",
+          description: "Welcome to EGA! Logging you in...",
+          variant: "default",
         });
+
+        // Log in the user automatically
+        const signInResult = await signIn("credentials", {
+          email: data.email,
+          password: data.password,
+          redirect: false, // Prevent full-page reload
+        });
+
+        if (signInResult?.error) {
+          toast({
+            title: "Login Failed",
+            description: "Please try logging in manually.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Fetch user details after successful login
+        const userResponse = await fetch(`/api/user?email=${data.email}`);
+        const user = await userResponse.json();
+
+        if (userResponse.ok) {
+          dispatch(setUser(user)); // Update Redux state
+        }
+
+        onClose(); // Close the modal
       }
     } catch {
       toast({

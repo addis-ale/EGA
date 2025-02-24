@@ -9,20 +9,25 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { logout } from "@/state/features/currentUserSlice";
 import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
+
+import { useDispatch } from "react-redux";
 
 interface SignoutModalProps {
   onClose: () => void;
 }
 
 export function SignoutModal({ onClose }: SignoutModalProps) {
+  const dispatch = useDispatch();
   const router = useRouter();
+  const handleSignout = async () => {
+    await signOut({ redirect: false });
+    dispatch(logout());
 
-  const handleSignout = () => {
-    router.refresh();
-    signOut();
     onClose();
+    router.push("/");
   };
 
   return (

@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
-
 import {
   Dialog,
   DialogContent,
@@ -23,6 +21,8 @@ import { Eye, EyeOff, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SignUpDialog } from "./signupModal";
 import Image from "next/image";
+import { useDispatch } from "react-redux";
+import { setUser } from "@/state/features/currentUserSlice";
 
 // Zod Schema for Form Validation
 const loginSchema = z.object({
@@ -37,8 +37,8 @@ export function LogInDialog() {
   const [showSignUp, setShowSignUp] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
-  const router = useRouter();
 
+  const dispatch = useDispatch();
   // React Hook Form
   const {
     register,
@@ -58,9 +58,9 @@ export function LogInDialog() {
       const result = await signIn("credentials", {
         email: data.email,
         password: data.password,
-        redirect: false, // Change to `true` to auto-redirect
+        redirect: false,
       });
-      console.log("sign up result", result);
+
       if (result?.error) {
         toast({
           title: "Login Failed",
@@ -73,8 +73,14 @@ export function LogInDialog() {
           description: "Welcome back!",
         });
 
-        router.refresh();
-        onClose();
+        // Fetch full user details
+        const response = await fetch(`/api/user?email=${data.email}`);
+        const user = await response.json();
+
+        if (response.ok) {
+          dispatch(setUser(user));
+        }
+        onClose(); // Close the modal
       }
     } catch {
       toast({
