@@ -5,14 +5,15 @@ import { NextResponse } from "next/server";
 
 const gameSchema = z.object({
   id: z.string().uuid().optional(),
-  gameName: z.string().min(1, "game name required"),
-  type: z.enum(["TABLE_TOP", "PHYSICAL"]),
-  imageUrl: z.string().url().optional(),
-  videoUrl: z.string().url().optional(),
+  productName: z.string().min(1, "game name required"),
+  gameType: z.enum(["TABLE_TOP", "PHYSICAL"]),
+  uploadedCoverImage: z.string().url().optional(),
+  uploadedVideo: z.string().url().optional(),
   price: z.number().min(0, "price should be postive number"),
-  discountPrice: z.number().min(0, "postive number"),
-  ageLimit: z.number().min(1, "age must be postive"),
-  available: z.number().min(1, "at least one item needed "),
+  discountPercentage: z.number().min(0, "postive number"),
+  ageRestriction: z.number().min(1, "age must be postive"),
+  availableProduct: z.number().min(1, "at least one item needed "),
+  productDescription: z.string().min(1, "producr description needed"),
 });
 const allowedTypes = ["TABLE_TOP", "PHYSICAL"];
 export async function POST(req: Request) {
@@ -38,9 +39,9 @@ export async function POST(req: Request) {
     const validation = gameSchema.safeParse({
       ...body,
       price: Number(body.price),
-      discountPrice: Number(body.discountPrice ?? 0),
-      ageLimit: Number(body.ageLimit),
-      available: Number(body.available),
+      discountPercentage: Number(body.discountPercentage ?? 0),
+      ageRestriction: Number(body.ageRestriction),
+      availableProduct: Number(body.availableProduct),
     });
     if (!validation.success) {
       return NextResponse.json({
@@ -51,34 +52,35 @@ export async function POST(req: Request) {
     }
     console.log(validation.data);
     const {
-      gameName,
-      type,
-      imageUrl,
-      videoUrl,
+      productName: productName,
+      gameType,
+      uploadedCoverImage,
+      uploadedVideo,
 
       price,
-      discountPrice,
-      ageLimit,
-      available,
+      discountPercentage,
+      ageRestriction,
+      availableProduct,
+      productDescription,
     } = validation.data;
     await prisma.$connect().catch((error) => {
       throw new Error("dc connection failed" + error);
     });
     const existingGame = await prisma.game.findUnique({
-      where: { gameName: gameName },
+      where: { productName: productName },
     });
 
     if (existingGame) {
       const game = await prisma.available.upsert({
         where: { gameId: existingGame.id },
         update: {
-          available: {
-            increment: available,
+          availableProduct: {
+            increment: availableProduct,
           },
         },
         create: {
           gameId: existingGame.id,
-          available: available,
+          availableProduct: availableProduct,
         },
       });
       return NextResponse.json({
@@ -89,25 +91,26 @@ export async function POST(req: Request) {
     } else {
       const game = await prisma.game.create({
         data: {
-          gameName,
-          type,
-          imageUrl: imageUrl || null,
-          videoUrl: videoUrl || null,
+          productName: productName,
+          gameType,
+          uploadedCoverImage: uploadedCoverImage || null,
+          uploadedVideo: uploadedVideo || null,
           price,
-          discountPrice,
-          ageLimit,
+          discountPercentage,
+          ageRestriction,
+          productDescription,
         },
       });
 
       await prisma.available.create({
-        data: { gameId: game.id, available: available },
+        data: { gameId: game.id, availableProduct: availableProduct },
       });
       // const availableGame = await prisma.game.findMany({
-      //   where: { gameName: gameName, ageLimit: ageLimit },
+      //   where: { gameName: gameName, ageRestriction: ageRestriction },
       // });
 
       // await prisma.game.updateMany({
-      //   where: { gameName: gameName, ageLimit: ageLimit },
+      //   where: { gameName: gameName, ageRestriction: ageRestriction },
       //   data: {
       //     available: availableGame.length + available,
       //   },

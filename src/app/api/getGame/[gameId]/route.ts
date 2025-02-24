@@ -24,7 +24,7 @@ export async function GET(
       where: { id: gameId.toString() },
       include: {
         review: true,
-        available: true,
+        availableProduct: true,
       },
     });
 

@@ -10,7 +10,7 @@ const gameSchema = z.object({
   videoUrl: z.string().url().optional(),
   price: z.number().min(0, "price should be postive number").optional(),
   discountPrice: z.number().min(0, "postive number").optional().nullable(),
-  available: z.number().min(1, "at least one item needed").optional(),
+  availableProduct: z.number().min(1, "at least one item needed").optional(),
   ageLimit: z.number().min(1, "age must be postive").optional().nullable(),
 });
 export async function PUT(req: Request) {
@@ -41,7 +41,7 @@ export async function PUT(req: Request) {
       type,
       discountPrice,
       ageLimit,
-      available,
+      availableProduct,
     } = validateData;
     await prisma.$connect().catch((error) => {
       throw new Error("db connection", error);
@@ -73,7 +73,7 @@ export async function PUT(req: Request) {
     await prisma.available.update({
       where: { gameId: id },
       data: {
-        ...(available && { available }),
+        ...(availableProduct && { availableProduct }),
       },
     });
     console.log(gameUpdate);

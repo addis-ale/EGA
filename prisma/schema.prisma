@@ -38,16 +38,17 @@ enum UserRoll {
 
 model Game {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
-  gameName  String  @unique
-  type   GameType 
-  imageUrl  String?
-  videoUrl  String?
-  discountPrice  Int
+  productName  String  @unique
+  gameType   GameType 
+  uploadedCoverImage  String?
+  uploadedVideo  String?
+  discountPercentage  Int
   price        Int
-  ageLimit  Int
+  productDescription String
+  ageRestriction  Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  available Available[]
+  availableProduct Available[]
   review  Review[]
   
 
@@ -57,7 +58,7 @@ model Available {
   id               String  @id @default(auto()) @map("_id") @db.ObjectId
 gameId String   @db.ObjectId @unique
 game Game @relation(fields: [gameId],references: [id],onDelete: Cascade)
-available Int @default(0)
+availableProduct Int @default(0)
 createdAt DateTime @default(now())
 updatedAt DateTime @updatedAt
 }
@@ -94,7 +95,7 @@ model CartItem{
          prodcutId String
          quantity Int
          price Float
-         imageUrl String
+         imageUruploadedCoverImagel String
 
 
 
