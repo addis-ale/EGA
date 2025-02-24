@@ -82,11 +82,11 @@ export default function ProductReview() {
       !productDescription ||
       !uploadedCoverImage ||
       !uploadedVideo ||
-      !discountPercentage ||
       !ageRestriction ||
       !gameType ||
       !availableProduct ||
-      !price
+      (price ?? null) === null ||
+      (discountPercentage ?? null) === null
     ) {
       router.push("/dashboard/createpost/step3");
     }
@@ -107,11 +107,11 @@ export default function ProductReview() {
     productDescription &&
     uploadedCoverImage &&
     uploadedVideo &&
-    discountPercentage &&
     ageRestriction &&
     gameType &&
     availableProduct &&
-    price
+    (price ?? null) !== null &&
+    (discountPercentage ?? null) !== null
   )
     return (
       <div className="container mx-auto p-6 min-h-screen flex items-center">

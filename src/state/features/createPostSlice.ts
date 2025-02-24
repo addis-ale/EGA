@@ -6,7 +6,7 @@ import { z } from "zod";
 const productSchema = z.object({
   productName: z
     .string()
-    .min(3, "Product name must contain at least 3 characters")
+    .min(2, "Product name must contain at least 3 characters")
     .max(50, "Product name can't be longer than 50 characters")
     .default(""),
 
@@ -18,13 +18,12 @@ const productSchema = z.object({
   uploadedVideo: z.string().default(""),
   uploadedCoverImage: z.string().default(""),
 
-  price: z.number().min(0, "Price must be a positive number").default(0),
+  price: z.number().min(0, "Price must be a positive number"),
 
   discountPercentage: z
     .number()
     .min(0, "Discount must be positive")
-    .max(100, "Discount cannot exceed 100%")
-    .default(0),
+    .max(100, "Discount cannot exceed 100%"),
 
   ageRestriction: z
     .enum(["all", "13", "15", "18"], {
@@ -73,8 +72,8 @@ export const createPostSlice = createSlice({
     resetProduct: (state) => {
       state.productName = "";
       state.productDescription = "";
-      state.uploadedCoverImage = ""; // Assuming you meant to reset this
-      state.uploadedVideo = ""; // Assuming you meant to reset this
+      state.uploadedCoverImage = "";
+      state.uploadedVideo = "";
       state.discountPercentage = 0;
       state.ageRestriction = "all";
       state.gameType = "Table Game";
