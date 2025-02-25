@@ -1,6 +1,7 @@
 import { z } from "zod";
 import prisma from "@/lib/prismadb";
 import { NextResponse } from "next/server";
+// import { getToken } from "next-auth/jwt";
 
 const cartitemschema = z.object({
   id: z.string().uuid().optional(),
@@ -8,7 +9,7 @@ const cartitemschema = z.object({
   productId: z.string().min(1, "product id required"),
   quantity: z.number().int().min(1, "at least 1 item required"),
   price: z.number().min(0, "price should be postive number"),
-  imageUrl: z.string().url(),
+  imageUruploadedCoverImagel: z.string().url(),
 });
 const cartSchema = z.object({
   id: z.string().uuid().optional(),
@@ -20,6 +21,7 @@ const cartSchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    // const token=getToken({req,secret:process.env.NEXTAUTH_SECRET})
     const body = await req.json();
     console.log(body);
     const validation = cartSchema.safeParse({
@@ -58,7 +60,7 @@ export async function POST(req: Request) {
             prodcutId: cartitem.productId,
             price: cartitem.price,
             quantity: cartitem.quantity,
-            imageUrl: cartitem.imageUrl,
+            imageUruploadedCoverImagel: cartitem.imageUruploadedCoverImagel,
           })),
         },
       },

@@ -29,7 +29,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!allowedTypes.includes(body.type)) {
+    if (!allowedTypes.includes(body.gameType)) {
       return NextResponse.json({
         error: "Invalid game type. Allowed values: TABLE_TOP, PHYSICAL",
         status: 400,
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     }
     console.log(validation.data);
     const {
-      productName: productName,
+      productName,
       gameType,
       uploadedCoverImage,
       uploadedVideo,
