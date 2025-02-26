@@ -19,7 +19,7 @@ export async function DELETE(
       throw new Error("db connection failed", error);
     });
     await prisma.game.delete({
-      where: { id: gameId.toString() },
+      where: { id: gameId },
     });
     return NextResponse.json({
       message: "game deleted",

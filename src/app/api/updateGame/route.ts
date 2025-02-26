@@ -4,11 +4,11 @@ import { z, ZodError } from "zod";
 
 const gameSchema = z.object({
   id: z.string(),
-  productName: z.string().min(1, "game name required"),
-  gameType: z.enum(["TABLE_TOP", "PHYSICAL"]),
+  productName: z.string().min(1, "game name required").optional(),
+  gameType: z.enum(["TABLE_TOP", "PHYSICAL"]).optional(),
   uploadedCoverImage: z.string().url().optional(),
   videoUrl: z.string().url().optional(),
-  productDescription: z.string(),
+  productDescription: z.string().optional(),
   price: z.number().min(0, "price should be postive number").optional(),
   discountPercentage: z.number().min(0, "postive number").optional().nullable(),
   availableProduct: z.number().min(1, "at least one item needed").optional(),

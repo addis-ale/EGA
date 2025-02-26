@@ -21,7 +21,7 @@ export async function GET(
     console.log(gameId);
 
     const getGame = await prisma.game.findUnique({
-      where: { id: gameId.toString() },
+      where: { id: gameId },
       include: {
         review: true,
         availableProduct: true,

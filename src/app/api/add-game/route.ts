@@ -18,6 +18,16 @@ const gameSchema = z.object({
 const allowedTypes = ["TABLE_TOP", "PHYSICAL"];
 export async function POST(req: Request) {
   try {
+    // const userId = "user123";
+    // const user = await prisma.user.findUnique({
+    //   where: { id: userId },
+    // });
+    // if (!user) {
+    //   return NextuiResponse.json({
+    //     message: "unahutorized",
+    //   });
+    // }
+    // console.log(user);
     const body = await req.json();
     console.log(body);
     if (!body || typeof body !== "object") {

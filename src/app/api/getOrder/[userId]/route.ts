@@ -1,30 +1,36 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prismadb";
 
-import { getToken } from "next-auth/jwt";
+// import { getToken } from "next-auth/jwt";
+import { getCurrentUser } from "@/actions/getCurrentUser";
 
 export async function GET(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  req: any
-  // context: { params: { userId: string } }
+  req: any,
+  context: { params: { userId: string } }
 ) {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    if (!token) {
-      return NextResponse.json({
-        message: "user not found",
-        status: 403,
-      });
+    // const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const user = getCurrentUser();
+    if (!user) {
+      console.log("user cant found");
     }
+    // console.log(user);
+    // if (!token) {
+    //   return NextResponse.json({
+    //     message: "user not found",
+    //     status: 403,
+    //   });
+    // }
 
-    const userId = token.id;
-    if (!userId) {
-      return NextResponse.json({ message: "user id required" });
-    }
-    // const { params } = context;
-    // const { userId } = params;
+    // const userId = token.id;
+    // if (!userId) {
+    //   return NextResponse.json({ message: "user id required" });
+    // }
+    const { params } = context;
+    const { userId } = params;
     const getUser = await prisma.user.findUnique({
-      where: { id: userId.toString() },
+      where: { id: userId },
     });
     if (!getUser) {
       return NextResponse.json({
@@ -33,7 +39,7 @@ export async function GET(
     }
 
     const getUserData = await prisma.user.findMany({
-      where: { id: userId.toString() },
+      where: { id: userId },
       include: {
         order: true,
       },
@@ -44,8 +50,9 @@ export async function GET(
       });
     }
     return NextResponse.json({
-      message: "user cart send",
+      message: "user order send",
       status: 200,
+      getUserData,
     });
   } catch (error) {
     if (error instanceof Error) {
