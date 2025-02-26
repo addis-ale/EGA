@@ -23,6 +23,7 @@ model User {
     review Review[]
     cart Cart[]
     order Order[]
+    wishlist Wishlist[]
     search SearchHistory[]
     accounts  Account[]
     sessions  Session[]
@@ -46,6 +47,7 @@ model Game {
   price        Int
   productDescription String
   ageRestriction  Int
+  gameguide      Gameguides[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   availableProduct Available[]
@@ -67,11 +69,11 @@ model Review {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
      user  User @relation(fields:[userId],references: [id])
      userId String
-     game Game @relation(fields: [gameId],references: [id],onDelete: Cascade)
-     gameId String
-     content String 
-     Likes Int
-     disLikes  Int 
+     game Game @relation(fields: [productId],references: [id],onDelete: Cascade)
+     productId String
+     comment String 
+     Likes Int?
+     disLikes  Int?
      rating Int @default(1)
       createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -83,6 +85,7 @@ model Cart {
        userId String
        user User @relation(fields: [userId], references: [id],onDelete: Cascade)
        items CartItem[]
+       totalPrice Float
        createdAt DateTime @default(now())
        updatedAt DateTime @updatedAt
 
@@ -94,7 +97,6 @@ model CartItem{
          cart Cart @relation(fields: [cartId],references: [id],onDelete: Cascade)
          prodcutId String
          quantity Int
-         price Float
          imageUruploadedCoverImagel String
 
 
@@ -106,9 +108,36 @@ model Order{
            user User @relation(fields: [userId],references: [id])
            orderItem OrderItem[]
            status Orderstatus @default(PENDING)
+           paymentMethod PaymentMethod
            createdAt DateTime @default(now())
            updatedAt DateTime @updatedAt
+           totalPrice Float
 
+}
+enum PaymentMethod{
+  TeleBirr
+  PickUp
+
+}
+model Wishlist {
+    id                String  @id @default(auto()) @map("_id") @db.ObjectId
+    userId String 
+    user User @relation(fields: [userId],references: [id])
+    product Wishlistproduct[]
+
+}
+model Wishlistproduct {
+      id                String  @id @default(auto()) @map("_id") @db.ObjectId
+      wishId String
+      wish Wishlist @relation(fields: [wishId],references: [id])
+      productId String
+}
+
+model Gameguides{
+    id                String  @id @default(auto()) @map("_id") @db.ObjectId
+    productId String
+    product Game @relation(fields: [productId],references: [id])
+    instructions String
 }
 model OrderItem{
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
@@ -116,7 +145,6 @@ model OrderItem{
           order Order @relation(fields: [orderId],references: [id],onDelete: Cascade)
           productId String
           quantity Int
-          price Float
         
 
  
@@ -126,6 +154,8 @@ model SearchHistory {
             userId String   @unique
             user User @relation(fields: [userId],references: [id],onDelete: Cascade)
             search Search[]
+            createdAt DateTime @default(now())
+            updatedAt DateTime @updatedAt
 
 
 

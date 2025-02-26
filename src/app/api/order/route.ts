@@ -6,14 +6,14 @@ const orderItemSchema = z.object({
   orderId: z.string().min(1, "order id needed").optional(),
   productId: z.string().min(1, "product id needed"),
   quantity: z.number().int().min(1, "at least one item"),
-  price: z.number().min(0, "price must be positive"),
 });
 
 const orderSchema = z.object({
   id: z.string().uuid().optional(),
   userId: z.string().min(1, "user id require"),
   orderItem: z.array(orderItemSchema),
-
+  totalPrice: z.number().min(0, "price must be positive"),
+  paymentMethod: z.enum(["TeleBirr"]),
   status: z.enum(["SHIPED", "PENDING", "COMPLETED", "CANCELED"]),
 });
 
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
       orderItem: body.orderItem?.map((order: any) => ({
         ...order,
         quantity: Number(order.quantity),
-        price: Number(order.price),
+        totalPrice: Number(order.totalPrice),
         productId: order.productId,
       })),
     });
@@ -39,16 +39,18 @@ export async function POST(req: Request) {
       });
     }
 
-    const { userId, orderItem } = validation.data;
+    const { userId, orderItem, totalPrice, paymentMethod, status } =
+      validation.data;
     await prisma.$connect();
     const order = await prisma.order.create({
       data: {
         userId,
-        status: "PENDING",
+        status,
+        totalPrice,
+        paymentMethod,
         orderItem: {
           create: orderItem?.map((order) => ({
             productId: order.productId,
-            price: order.price,
             quantity: order.quantity,
           })),
         },

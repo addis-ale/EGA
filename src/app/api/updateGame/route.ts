@@ -4,14 +4,19 @@ import { z, ZodError } from "zod";
 
 const gameSchema = z.object({
   id: z.string(),
-  gameName: z.string().min(1, "game name required"),
-  type: z.enum(["TABLE_TOP", "PHYSICAL"]),
-  imageUrl: z.string().url().optional(),
+  productName: z.string().min(1, "game name required"),
+  gameType: z.enum(["TABLE_TOP", "PHYSICAL"]),
+  uploadedCoverImage: z.string().url().optional(),
   videoUrl: z.string().url().optional(),
+  productDescription: z.string(),
   price: z.number().min(0, "price should be postive number").optional(),
-  discountPrice: z.number().min(0, "postive number").optional().nullable(),
+  discountPercentage: z.number().min(0, "postive number").optional().nullable(),
   availableProduct: z.number().min(1, "at least one item needed").optional(),
-  ageLimit: z.number().min(1, "age must be postive").optional().nullable(),
+  ageRestriction: z
+    .number()
+    .min(1, "age must be postive")
+    .optional()
+    .nullable(),
 });
 export async function PUT(req: Request) {
   try {
@@ -34,13 +39,14 @@ export async function PUT(req: Request) {
     const validateData = validation.data;
     const {
       id,
-      gameName,
-      imageUrl,
+      productName,
+      uploadedCoverImage,
       videoUrl,
       price,
-      type,
-      discountPrice,
-      ageLimit,
+      gameType,
+      discountPercentage,
+      productDescription,
+      ageRestriction,
       availableProduct,
     } = validateData;
     await prisma.$connect().catch((error) => {
@@ -60,13 +66,14 @@ export async function PUT(req: Request) {
         id: id,
       },
       data: {
-        ...(gameName && { gameName }),
-        ...(imageUrl && { imageUrl }),
+        ...(productName && { productName }),
+        ...(productDescription && { productDescription }),
+        ...(uploadedCoverImage && { uploadedCoverImage }),
         ...(videoUrl && { videoUrl }),
         ...(price && { price }),
-        ...(type && { type }),
-        ...(discountPrice && { discountPrice }),
-        ...(ageLimit && { ageLimit }),
+        ...(gameType && { gameType }),
+        ...(discountPercentage && { discountPercentage }),
+        ...(ageRestriction && { ageRestriction }),
       },
     });
 

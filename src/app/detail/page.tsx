@@ -30,7 +30,7 @@ export default function Detail({ params }: DetailProps) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        userId: "123", // Replace with actual user ID from auth
+        userId: "123",
         product,
       }),
     });

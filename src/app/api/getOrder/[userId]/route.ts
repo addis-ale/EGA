@@ -1,28 +1,30 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prismadb";
 
-// import { getToken } from "next-auth/jwt";
+import { getToken } from "next-auth/jwt";
 
 export async function GET(
-  req: Request,
-  context: { params: { userId: string } }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  req: any
+  // context: { params: { userId: string } }
 ) {
-  //    try{
-  //            const token=await getToken({req,secret:process.env.NEXTAUTH_SECRET});
-  //            if(!token){
-  //             return NextResponse.json({
-  //                 message:"user not found",
-  //                 status:403
-  //             })
-  //            }
-
-  //            const userId=token.id;
-  //    }
   try {
-    const { params } = context;
-    const { userId } = params;
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token) {
+      return NextResponse.json({
+        message: "user not found",
+        status: 403,
+      });
+    }
+
+    const userId = token.id;
+    if (!userId) {
+      return NextResponse.json({ message: "user id required" });
+    }
+    // const { params } = context;
+    // const { userId } = params;
     const getUser = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: userId.toString() },
     });
     if (!getUser) {
       return NextResponse.json({
@@ -31,7 +33,7 @@ export async function GET(
     }
 
     const getUserData = await prisma.user.findMany({
-      where: { id: userId },
+      where: { id: userId.toString() },
       include: {
         order: true,
       },
