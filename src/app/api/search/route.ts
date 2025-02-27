@@ -7,22 +7,15 @@ const searchSchama = z.object({
   publishedAt: z.enum(["Today", "Last week", "Last month"]).optional(),
   age: z.string().optional(),
   alphabet: z.string().optional(),
-  userId: z.string().nullable(),
   type: z.enum(["TABLE_TOP", "PHYSICAL"]).optional(),
 });
 
 export async function GET(req: Request) {
   try {
+    const userId = "user123";
     const url = new URL(req.url);
-    const {
-      priceRange,
-      publishedAt,
-      age,
-      alphabet,
-      userId,
-      searchQuery,
-      type,
-    } = Object.fromEntries(url.searchParams);
+    const { priceRange, publishedAt, age, alphabet, searchQuery, type } =
+      Object.fromEntries(url.searchParams);
     const validation = searchSchama.safeParse({
       priceRange,
       publishedAt,
@@ -71,7 +64,7 @@ export async function GET(req: Request) {
       filters.OR = gameNameFilter;
     }
     if (type) {
-      filters.type = type;
+      filters.gameType = type;
     }
 
     if (priceRange) {
@@ -82,7 +75,7 @@ export async function GET(req: Request) {
       filters.createdAt = { gte: publishedData };
     }
     if (age) {
-      filters.ageLimit = Number(age);
+      filters.ageRestriction = Number(age);
     }
     await prisma.$connect().catch((error) => {
       throw new Error(error);
@@ -91,7 +84,11 @@ export async function GET(req: Request) {
       where: filters,
       orderBy: { createdAt: "desc" },
     });
-
+    if (!resultGame) {
+      return NextResponse.json({
+        message: "Game can't find",
+      });
+    }
     await prisma.searchHistory.create({
       data: {
         userId: userId,

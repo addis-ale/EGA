@@ -57,7 +57,9 @@ export async function POST(req: Request) {
         },
       });
     }
-    await prisma.$connect();
+    await prisma.$connect().catch((error) => {
+      throw new Error("db connection error" + error);
+    });
 
     const existedUser = await prisma.user.findUnique({
       where: { UserEmail },
