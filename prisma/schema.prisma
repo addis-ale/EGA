@@ -8,26 +8,46 @@ generator client {
 }
  
 model User {
-  id            String          @id @default(auto()) @map("_id") @db.ObjectId
-  name          String
-  email         String        @unique
-  image  String?
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String      @unique
+  image     String?
   hashedPassword String
-  role Role @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role      Role        @default(USER)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  wishlist  Wishlist?   // One-to-one relationship with Wishlist
 }
- enum Role{
-    USER
-    ADMIN
- }
- model Product {
-   id            String          @id @default(auto()) @map("_id") @db.ObjectId
-  productName       String
+enum Role {
+  USER
+  ADMIN
+}
+model Wishlist {
+  id        String              @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String              @unique @db.ObjectId // Ensures only one wishlist per user
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wishlists WishlistOnProduct[] // Stores products added to wishlist
+  createdAt DateTime            @default(now())
+}
+
+model WishlistOnProduct {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  wishlistId String @db.ObjectId
+  productId  String @db.ObjectId
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([wishlistId, productId]) // Prevents duplicate product entries in the wishlist
+}
+
+model Product {
+  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  productName        String
   productDescription String
   uploadedCoverImage String
   discountPercentage Float
-  ageRestriction    Int
+  ageRestriction     Int
   gameType          String
   availableProduct  Int
   price            Float
@@ -35,8 +55,6 @@ model User {
   salesCount       Int      @default(0)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+
+  wishlists WishlistOnProduct[] // A product can be in multiple users' wishlists
 }
-
-
-
-

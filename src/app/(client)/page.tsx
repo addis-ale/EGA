@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import HomeBanner from "@/components/clientComponents/homeBanner";
 import Container from "@/components/container";
 import { dummyData } from "../../../data/catagorizedDummy";
@@ -9,32 +9,53 @@ import { useGetAllProductsQuery } from "@/state/features/productApi";
 import TrendingCardSkeleton from "@/components/productCards/trendingCardSkeleton";
 import ProductCarousel from "@/components/clientComponents/dealOfTheWeek";
 import ProductCarouselSkeleton from "@/components/productCards/productCarousalSkeleton";
+import { useGetWishlistQuery } from "@/state/features/whishlistApi";
 
 const ProductList = () => {
-  //trending
+  // Trending products
   const [page, setPage] = useState(1);
   const LIMIT = 3;
-  const { data: trending, isLoading } = useGetAllProductsQuery({
-    category: "trending",
-    page,
-    limit: LIMIT,
-  });
-  const totalProducts = trending?.total || 0; // Ensure it doesn't break if undefined
-  const totalPages = Math.ceil(totalProducts / LIMIT);
-  //TODO: fetch from the api later
-  const recommended = dummyData.recommendations;
-  //deal of the week
+  const { data: trending, isLoading: trendingLoading } = useGetAllProductsQuery(
+    {
+      category: "trending",
+      page,
+      limit: LIMIT,
+    }
+  );
 
+  const totalProducts = trending?.total || 0; // Fallback to 0 if undefined
+  const totalPages = Math.ceil(totalProducts / LIMIT);
+
+  // Recommended products from dummy data
+  const recommended = dummyData.recommendations;
+
+  // Fetching wishlist data
+  const { data: fav, isLoading: favLoading } = useGetWishlistQuery();
+  const [localWishlist, setLocalWishlist] = useState(fav?.wishlist || []);
+  console.log(localWishlist);
+
+  // Deal of the week
   const { data: dealOfTheWeek, isLoading: dealLoading } =
     useGetAllProductsQuery({
       category: "deal-of-the-week",
     });
+
   const totaldeal = dealOfTheWeek?.total;
+
+  // Synchronize local wishlist with fetched data
+  useEffect(() => {
+    if (fav?.wishlist) {
+      setLocalWishlist(fav.wishlist);
+    }
+  }, [fav?.wishlist]);
+
   return (
     <Container>
       <div className="w-full flex flex-col gap-4">
         <HomeBanner />
-        {isLoading ? (
+
+        {/* Trending products */}
+        {trendingLoading ? (
           <TrendingCardSkeleton limit={LIMIT} />
         ) : (
           trending && (
@@ -42,10 +63,23 @@ const ProductList = () => {
               setPage={setPage}
               trending={trending.products}
               totalPages={totalPages}
+              setLocalWishList={setLocalWishlist}
+              localWishList={localWishlist}
             />
           )
         )}
-        <Recommended recommended={recommended} />
+
+        {/* Recommended products */}
+        {fav && (
+          <Recommended
+            recommended={recommended}
+            localWishList={localWishlist}
+            setLocalWishList={setLocalWishlist}
+            loading={favLoading}
+          />
+        )}
+
+        {/* Deal of the week */}
         {dealLoading ? (
           <ProductCarouselSkeleton />
         ) : (
@@ -56,7 +90,6 @@ const ProductList = () => {
             />
           )
         )}
-        {/* TODO: top rated after review section  */}
       </div>
     </Container>
   );

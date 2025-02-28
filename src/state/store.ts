@@ -4,6 +4,7 @@ import storage from "redux-persist/lib/storage"; // Defaults to localStorage for
 import createPostReducer from "./features/createPostSlice"; // Your persisted slice
 import currentUserState from "./features/currentUserSlice"; // User state slice
 import { productApi } from "./features/productApi";
+import { wishlistApi } from "./features/whishlistApi";
 
 // Configuration for Redux Persist
 const persistConfig = {
@@ -16,7 +17,8 @@ const persistConfig = {
 const rootReducer = combineReducers({
   createPost: createPostReducer, // Persisted reducer
   currentUser: currentUserState, // Persisted reducer
-  [productApi.reducerPath]: productApi.reducer, // RTK Query API reducer (not persisted)
+  [productApi.reducerPath]: productApi.reducer,
+  [wishlistApi.reducerPath]: wishlistApi.reducer,
 });
 
 // Wrap rootReducer with persistReducer
@@ -28,7 +30,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false, // Disable serializability check for redux-persist
-    }).concat(productApi.middleware), // Add RTK Query middleware
+    }).concat(productApi.middleware, wishlistApi.middleware), // Add both middlewares
 });
 
 // Persistor for the store
