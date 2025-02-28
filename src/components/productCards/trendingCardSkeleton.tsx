@@ -1,44 +1,29 @@
-import type React from "react";
+import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface TrendingSkeletonProps {
-  limit: number;
-}
-
-const TrendingSkeleton: React.FC<TrendingSkeletonProps> = ({ limit }) => {
+export default function TrendingCardSkeleton({ limit = 3 }) {
   return (
-    <div className="w-full my-8">
-      <div className="flex justify-between items-center mb-6">
-        <Skeleton className="h-8 w-32" />
-        <div className="flex gap-2">
-          <Skeleton className="h-10 w-10 rounded-full" />
-          <Skeleton className="h-10 w-10 rounded-full" />
-        </div>
-      </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
+      {Array.from({ length: limit }).map((_, index) => (
+        <Card
+          key={index}
+          className="w-full max-w-md overflow-hidden rounded-xl border-0 shadow-lg"
+        >
+          <div className="relative h-64 w-full sm:h-80">
+            <Skeleton className="absolute inset-0 h-full w-full" />
+          </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Array(limit)
-          .fill(0)
-          .map((_, index) => (
-            <div key={index} className="flex flex-col gap-3">
-              <Skeleton className="h-64 w-full rounded-lg" />
-              <Skeleton className="h-6 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-              <div className="flex justify-between items-center mt-2">
-                <Skeleton className="h-6 w-20" />
-                <Skeleton className="h-10 w-10 rounded-full" />
-              </div>
+          <div className="p-6">
+            <Skeleton className="h-6 w-3/4 mb-2" />
+            <Skeleton className="h-4 w-1/2 mb-4" />
+
+            <div className="flex flex-col sm:flex-row sm:gap-3 gap-2">
+              <Skeleton className="h-10 w-full sm:w-auto rounded-md" />
+              <Skeleton className="h-10 w-full sm:w-auto rounded-md" />
             </div>
-          ))}
-      </div>
-
-      <div className="flex justify-center mt-8 gap-2">
-        <Skeleton className="h-10 w-10 rounded-md" />
-        <Skeleton className="h-10 w-10 rounded-md" />
-        <Skeleton className="h-10 w-10 rounded-md" />
-      </div>
+          </div>
+        </Card>
+      ))}
     </div>
   );
-};
-
-export default TrendingSkeleton;
+}

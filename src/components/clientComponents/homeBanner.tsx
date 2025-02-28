@@ -27,7 +27,7 @@ export default function HomeBanner() {
   }, []);
 
   return (
-    <div className="relative w-full flex h-[200px] xs:h-[250px] sm:h-[300px] md:h-[400px] lg:h-[450px]">
+    <div className=" hidden md:flex relative w-full  h-[200px] xs:h-[250px] sm:h-[300px] md:h-[400px] lg:h-[450px] md:mt-[50px] lg:mt-[120px]">
       {/* Main Slider */}
       <div className="relative flex-grow h-full">
         <AnimatePresence mode="wait">
