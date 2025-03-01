@@ -8,8 +8,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import StarRating from "@/components/starRation";
 import { useToast } from "@/hooks/use-toast";
-
-export default function DetailHero() {
+import { Product } from "@prisma/client";
+interface DetailedHeroProps {
+  product: Product;
+}
+export default function DetailHero({ product }: DetailedHeroProps) {
   const { toast } = useToast();
   const [url, setUrl] = useState("");
   useEffect(() => {
@@ -42,17 +45,17 @@ export default function DetailHero() {
         <div className="flex flex-col gap-4 sm:gap-6 w-full">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
             <h1 className="text-white font-bold text-2xl sm:text-3xl md:text-4xl">
-              UNO
+              {product.productName}
             </h1>
             <h3 className="text-white text-lg sm:text-xl md:text-2xl">
-              Table Top Game
+              {product.gameType}
             </h3>
           </div>
 
           <div className="relative w-full aspect-[16/9] md:aspect-[4/3] rounded-lg overflow-hidden flex justify-center">
             <Image
-              src="/imageAssets/artboard.png"
-              alt="UNO Card Game"
+              src={product.uploadedCoverImage}
+              alt={product.productName}
               fill
               className="object-contain"
               priority
@@ -60,7 +63,10 @@ export default function DetailHero() {
           </div>
 
           <div className="flex flex-col items-center space-y-4 sm:space-y-6 w-full">
-            {/* Star Rating */}
+            {/* Star Rating 
+            //TODO: make the star dynamic
+            
+            */}
             <StarRating initialRating={4.7} />
 
             {/* Adult Only Badge */}
@@ -70,7 +76,7 @@ export default function DetailHero() {
               </span>
               <div className="flex items-center justify-center w-10 h-10 sm:w-16 sm:h-16 rounded-full bg-gray-700">
                 <span className="text-white text-base sm:text-xl font-extrabold">
-                  18+
+                  {product.ageRestriction}+
                 </span>
               </div>
             </div>
@@ -89,7 +95,9 @@ export default function DetailHero() {
 
               <div className="flex justify-between items-center px-4 py-2 border-b-2 border-teal text-sm sm:text-base">
                 <span className="text-white">Amount Available</span>
-                <span className="text-white font-semibold">4</span>
+                <span className="text-white font-semibold">
+                  {product.availableProduct}
+                </span>
               </div>
 
               <div className="flex justify-end">
@@ -166,19 +174,10 @@ export default function DetailHero() {
 
             <div className="mt-6 sm:mt-8 space-y-3 sm:space-y-4 text-zinc-300">
               <h2 className="text-lg sm:text-xl font-semibold text-white">
-                About UNO
+                About {product.productName}
               </h2>
               <p className="text-sm sm:text-base">
-                UNO is a classic card game that&apos;s easy to pick up and
-                impossible to put down! Players take turns matching a card in
-                their hand with the current card shown on top of the deck either
-                by color or number.
-              </p>
-              <p className="text-sm sm:text-base">
-                Special action cards deliver game-changing moments as they help
-                you eliminate cards and take control of the game. Race against
-                others to empty your hand before everyone else in this
-                fast-paced and wildly fun game!
+                {product.productDescription}
               </p>
             </div>
           </div>

@@ -1,11 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
-import { useSwipeable } from "react-swipeable";
+import * as React from "react";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import { ReviewCard } from "./reviewCard";
+import { SingleStar } from "../singleStar";
 
-interface Review {
+interface Reviews {
   id: string;
   userId: string;
   productId: string;
@@ -14,108 +20,80 @@ interface Review {
   numberOfLikes: number;
   numberOfDislikes: number;
   comment: string;
-  createdAt: string;
+  createdAt: string; // ISO date string
 }
 
-interface ReviewSliderProps {
-  reviews: Review[];
+interface ReviewSlider {
+  review: Reviews[];
 }
 
-export function ReviewSlider({ reviews }: ReviewSliderProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [slidesPerView, setSlidesPerView] = useState(1);
+export function ReviewCarousel({ review }: ReviewSlider) {
+  const [isMobile, setIsMobile] = React.useState(false);
 
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setSlidesPerView(3); // Large screens (lg+)
-      } else if (window.innerWidth >= 768) {
-        setSlidesPerView(2); // Medium screens (md)
-      } else {
-        setSlidesPerView(1); // Small screens (xs, sm)
-      }
+  React.useEffect(() => {
+    // Function to check if screen is mobile
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 640);
     };
 
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    // Initial check
+    checkIfMobile();
+
+    // Add event listener for window resize
+    window.addEventListener("resize", checkIfMobile);
+
+    // Cleanup
+    return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
 
-  const totalSlides = reviews.length;
-  const loopedReviews = [...reviews, ...reviews.slice(0, slidesPerView)];
-
-  const nextSlide = useCallback(() => {
-    if (isAnimating) return;
-    setIsAnimating(true);
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % totalSlides);
-    setTimeout(() => setIsAnimating(false), 500);
-  }, [isAnimating, totalSlides]);
-
-  const prevSlide = useCallback(() => {
-    if (isAnimating) return;
-    setIsAnimating(true);
-    setCurrentIndex((prevIndex) =>
-      prevIndex === 0 ? totalSlides - 1 : prevIndex - 1
+  // Mobile version
+  if (isMobile) {
+    return (
+      <>
+        <div className="flex items-center gap-2">
+          <SingleStar />
+          <span className="text-2xl text-white font-bold">Expert Feedback</span>
+        </div>
+        <Carousel className="w-full max-w-xs mx-auto">
+          <CarouselContent>
+            {review.map((comment, index) => (
+              <CarouselItem key={index} className="pl-1">
+                <div className="p-5">
+                  <ReviewCard review={comment} />
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious />
+          <CarouselNext />
+        </Carousel>
+      </>
     );
-    setTimeout(() => setIsAnimating(false), 500);
-  }, [isAnimating, totalSlides]);
+  }
 
-  const handlers = useSwipeable({
-    onSwipedLeft: nextSlide,
-    onSwipedRight: prevSlide,
-    preventScrollOnSwipe: true,
-    trackMouse: true,
-  });
-
+  // Desktop/tablet version
   return (
-    <div className="px-4 sm:px-6" {...handlers}>
-      <div className="flex items-center justify-between mb-4 sm:mb-6">
-        <div className="flex items-center gap-1 sm:gap-2">
-          <Star className="h-5 w-5 sm:h-6 sm:w-6 fill-yellow-400 text-yellow-400" />
-          <h1 className="text-xl sm:text-2xl font-bold text-white">
-            Expert Feedback
-          </h1>
-        </div>
-        <div className="flex gap-1 sm:gap-2">
-          <button
-            onClick={prevSlide}
-            className="p-1 sm:p-2 rounded-full bg-[#3a3a3a] hover:bg-[#4a4a4a] transition-colors"
-            aria-label="Previous reviews"
-            disabled={isAnimating}
-          >
-            <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-          </button>
-          <button
-            onClick={nextSlide}
-            className="p-1 sm:p-2 rounded-full bg-[#3a3a3a] hover:bg-[#4a4a4a] transition-colors"
-            aria-label="Next reviews"
-            disabled={isAnimating}
-          >
-            <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
-          </button>
-        </div>
+    <>
+      <div className="flex items-center gap-2">
+        <SingleStar />
+        <span className="text-2xl text-white font-bold">Expert Feedback</span>
       </div>
-
-      <div className="overflow-hidden">
-        <div
-          className="flex gap-4 transition-transform duration-500 ease-in-out"
-          style={{
-            transform: `translateX(-${currentIndex * (100 / slidesPerView)}%)`,
-            width: `${(loopedReviews.length / slidesPerView) * 100}%`,
-          }}
-        >
-          {loopedReviews.map((review, index) => (
-            <div
-              key={`${review.id}-${index}`}
-              className="flex-shrink-0 px-2"
-              style={{ width: `${100 / slidesPerView}%` }}
+      <Carousel className="w-full">
+        <CarouselContent className="-ml-1">
+          {review.map((comment, index) => (
+            <CarouselItem
+              key={index}
+              className="pl-1 md:basis-1/2 lg:basis-1/3"
             >
-              <ReviewCard review={review} />
-            </div>
+              <div className="p-1">
+                <ReviewCard review={comment} />
+              </div>
+            </CarouselItem>
           ))}
-        </div>
-      </div>
-    </div>
+        </CarouselContent>
+        <CarouselPrevious />
+        <CarouselNext />
+      </Carousel>
+    </>
   );
 }

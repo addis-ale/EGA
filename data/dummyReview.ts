@@ -7,7 +7,8 @@ export const dummyReviews = [
     rating: 5,
     numberOfLikes: 12,
     numberOfDislikes: 1,
-    comment: "Absolutely amazing game! The story and graphics are top-notch.",
+    comment:
+      "Absolutely amazing game! The story and graphics are top-notch.Absolutely amazing game! The story and graphics are top-notch.Absolutely amazing game! The story and graphics are top-notch.Absolutely amazing game! The story and graphics are top-notch.Absolutely amazing game! The story and graphics are top-notch.Absolutely amazing game! The story and graphics are top-notch.Absolutely amazing game! The story and graphics are top-notch.Absolutely amazing game! The story and graphics are top-notch.Absolutely amazing game! The story and graphics are top-notch.Absolutely amazing game! The story and graphics are top-notch.Absolutely amazing game! The story and graphics are top-notch.Absolutely amazing game! The story and graphics are top-notch.",
     createdAt: "2025-02-25T12:30:00Z",
   },
   {
