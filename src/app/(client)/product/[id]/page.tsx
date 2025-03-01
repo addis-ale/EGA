@@ -14,6 +14,7 @@ const ProductDetail = () => {
   const { data: product, isLoading } = useGetProductByIdQuery(id as string);
   //TODO: fetch the review for the respective product including the reviewers data
   const review = dummyReviews;
+  //TODO: fetch related product also
   return (
     <Container>
       <div className="flex flex-col gap-4">
