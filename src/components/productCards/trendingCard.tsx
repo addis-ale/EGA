@@ -6,6 +6,7 @@ import { Bungee } from "next/font/google";
 
 import { useWishlist } from "@/hooks/useWishlist";
 import { Product } from "@prisma/client";
+import { useRouter } from "next/navigation";
 
 const bungee = Bungee({
   subsets: ["latin"],
@@ -26,13 +27,20 @@ export default function TrendingCard({
   localWishList,
 }: ProductCardProps) {
   const { handleAddToWishlist } = useWishlist();
-  const handleAddToWishlistWithOptimisticUpdate = async () => {
+  const handleAddToWishlistWithOptimisticUpdate = async (
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation();
     if (!localWishList.some((item) => item.id === product.id))
       setLocalWishList([...localWishList, product]);
     await handleAddToWishlist(product);
   };
+  const router = useRouter();
   return (
-    <Card className="w-full max-w-md overflow-hidden rounded-xl border-0 shadow-lg">
+    <Card
+      className="w-full max-w-md overflow-hidden rounded-xl border-0 shadow-lg "
+      onClick={() => router.push(`/product/${product.id}`)}
+    >
       <div className="relative h-64 w-full sm:h-80">
         <Image
           src={product.uploadedCoverImage || "/placeholder.svg"}
