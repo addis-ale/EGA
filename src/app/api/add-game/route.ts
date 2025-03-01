@@ -2,6 +2,7 @@ import prisma from "@/lib/prismadb";
 
 import { z, ZodError } from "zod";
 import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/actions/getCurrentUser";
 
 const gameSchema = z.object({
   id: z.string().uuid().optional(),
@@ -18,16 +19,13 @@ const gameSchema = z.object({
 const allowedTypes = ["TABLE_TOP", "PHYSICAL"];
 export async function POST(req: Request) {
   try {
-    // const userId = "user123";
-    // const user = await prisma.user.findUnique({
-    //   where: { id: userId },
-    // });
+    // const user = await getCurrentUser();
     // if (!user) {
-    //   return NextuiResponse.json({
-    //     message: "unahutorized",
+    //   return NextResponse.json({
+    //     message: "user not found",
     //   });
     // }
-    // console.log(user);
+
     const body = await req.json();
     console.log(body);
     if (!body || typeof body !== "object") {

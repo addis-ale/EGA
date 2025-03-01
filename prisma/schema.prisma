@@ -19,6 +19,7 @@ model User {
     UserEmail String @unique
     emailVerfied DateTime?
     password String
+    image String?
     role UserRoll  @default(USER)
     review Review[]
     cart Cart[]

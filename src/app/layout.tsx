@@ -1,14 +1,16 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Inter } from "next/font/google";
+import type React from "react";
 import "./globals.css";
-import { NavBar } from "@/components/NavBar";
+import { Inter } from "next/font/google";
+//import { Toaster } from "@/components/ui/toaster";
+import Providers from "./Provider";
+import { Toaster } from "@/components/ui/toaster";
+//import Providers from "./Provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Michael Engida - Software Engineer",
-  description:
-    "Portfolio of Michael Engida, a full-stack software engineer specializing in React, Next.js, and more.",
+  title: "EGA",
+  description: "EGA",
 };
 
 export default function RootLayout({
@@ -18,9 +20,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} bg-black min-h-screen`}>
-        <NavBar />
-        <main className="">{children}</main>
+      <body className={inter.className}>
+        {/* Wrap with Providers to pass Redux store */}
+        <Providers>{children}</Providers>
         <Toaster />
       </body>
     </html>

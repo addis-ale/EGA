@@ -1,98 +1,117 @@
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { ChevronDown, Search, ShoppingCart } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { useSelector } from "react-redux";
 import Link from "next/link";
-import { LogInDialog } from "./login-dialog";
+import { Search, X } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { LogInDialog } from "./modals/loginModal";
+
+import { MobileSearch } from "./navbar/mobile-search";
+import { SearchBar } from "./navbar/search-bar";
+import { NavLinks } from "./navbar/nav-links";
+import { LanguageSelector } from "./navbar/language-selector";
+import { CartButton } from "./navbar/cart-button";
+import CustomeDropDown from "./customeDropDown";
+import { RootState } from "@/state/store";
+import Container from "./container";
 
 export function NavBar() {
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  const toggleSearch = () => setIsSearchOpen(!isSearchOpen);
   return (
-    <header className="sticky top-0 z-50 bg-black border-b border-gray-800">
-      <div className="flex h-16 px-12">
-        {/* Left Section - Divider and Logo */}
-        <div className="flex items-center gap-8  px-4 ">
-          <Link href="/" className="text-2xl  font-bold text-white">
-            EGA
-          </Link>
+    <header className="sticky  top-0 z-50 bg-black border-b border-gray-800 w-full">
+      <div className="flex h-16  px-4 lg:px-12 items-center justify-between w-full">
+        <Logo />
+        <Container>
           <Separator
             orientation="vertical"
-            className="h-8 bg-white flex justify-end"
+            className="h-8 bg-white hidden lg:block"
           />
+          <DesktopNavigation
+            isSearchOpen={isSearchOpen}
+            toggleSearch={toggleSearch}
+          />
+        </Container>
+        <UserActions />
+      </div>
+      <MobileSearch isOpen={isSearchOpen} />
+    </header>
+  );
+}
+
+function Logo() {
+  return (
+    <div className="flex items-center gap-4 lg:gap-8">
+      <Link href="/" className="text-2xl font-bold text-white">
+        EGA
+      </Link>
+    </div>
+  );
+}
+
+function DesktopNavigation({
+  isSearchOpen,
+  toggleSearch,
+}: {
+  isSearchOpen: boolean;
+  toggleSearch: () => void;
+}) {
+  return (
+    <div className="flex-1 flex justify-center items-center max-w-full">
+      <div className="w-full max-w-4xl lg:max-w-6xl flex items-center justify-between ">
+        <div className="hidden lg:flex items-center gap-8">
+          <SearchBar />
+          <NavLinks />
         </div>
-
-        {/* Center Section - Search and Navigation */}
-        <div className="flex-1 flex justify-center">
-          <div className="max-w-6xl w-full flex items-center justify-between px-4">
-            <div className="flex items-center gap-8">
-              <div className="flex items-center gap-4">
-                <Search className="h-6 w-6 text-white" />
-                <Input
-                  placeholder="Search games..."
-                  className="w-[320px] bg-white text-black border-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
-                />
-              </div>
-
-              <nav className="hidden md:flex items-center gap-6">
-                <Link
-                  href="/"
-                  className="text-sm text-white hover:text-gray-300"
-                >
-                  Home
-                </Link>
-                <Link
-                  href="/filter"
-                  className="text-sm text-white hover:text-gray-300 font-semibold"
-                >
-                  Filter
-                </Link>
-              </nav>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex items-center gap-2 text-white"
-                  >
-                    <span className="text-sm">English(United States)</span>
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-gray-900">
-                  <DropdownMenuItem>English</DropdownMenuItem>
-                  <DropdownMenuItem>Español</DropdownMenuItem>
-                  <DropdownMenuItem>Français</DropdownMenuItem>
-                  <DropdownMenuItem>Deutsch</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative text-white"
-              >
-                <ShoppingCart className="h-8 w-8" />
-                <span className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-orange-500 text-[10px] font-bold">
-                  2
-                </span>
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Section - User Actions */}
-        <div className="flex items-center gap-2 px-4">
-          <Separator orientation="vertical" className="h-8 bg-white" />
-          <LogInDialog />
+        <MobileSearchToggle
+          isSearchOpen={isSearchOpen}
+          toggleSearch={toggleSearch}
+        />
+        <div className="flex items-center gap-4">
+          <LanguageSelector />
+          <CartButton />
         </div>
       </div>
-    </header>
+    </div>
+  );
+}
+
+function MobileSearchToggle({
+  isSearchOpen,
+  toggleSearch,
+}: {
+  isSearchOpen: boolean;
+  toggleSearch: () => void;
+}) {
+  return (
+    <div className="lg:hidden flex items-center">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="text-white"
+        onClick={toggleSearch}
+      >
+        {isSearchOpen ? (
+          <X className="h-6 w-6" />
+        ) : (
+          <Search className="h-6 w-6" />
+        )}
+      </Button>
+    </div>
+  );
+}
+
+function UserActions() {
+  const user = useSelector((state: RootState) => state.currentUser.user);
+  console.log(user);
+
+  return (
+    <div className="flex items-center gap-2 px-2 lg:px-4">
+      {user ? <CustomeDropDown /> : <LogInDialog />}
+    </div>
   );
 }
