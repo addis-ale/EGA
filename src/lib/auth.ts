@@ -1,10 +1,10 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "./prismadb";
-import { NextAuthOptions } from "next-auth";
-import { compare } from "bcryptjs";
+import { compareSync } from "bcryptjs";
+import { AuthOptions } from "next-auth";
 
-export const authOptions: NextAuthOptions = {
+export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(prisma),
   session: {
     strategy: "jwt",
@@ -27,13 +27,13 @@ export const authOptions: NextAuthOptions = {
         }
         const existedUser = await prisma.user.findFirst({
           where: {
-            UserEmail: credentials.email,
+            email: credentials.email,
           },
         });
         if (!existedUser) {
           return null;
         }
-        const isPasswordMatch = await compare(
+        const isPasswordMatch = compareSync(
           credentials.password,
           existedUser.password
         );
@@ -43,9 +43,9 @@ export const authOptions: NextAuthOptions = {
 
         return {
           id: existedUser.id,
-          name: existedUser.userName,
+          name: existedUser.name,
           role: existedUser.role,
-          email: existedUser.UserEmail,
+          email: existedUser.email,
         };
       },
     }),
@@ -53,6 +53,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async jwt({ token, user }: { token: any; user?: any }) {
+      // Persist the OAuth access_token and or the user id to the token right after signin
       if (user) {
         return {
           ...token,
@@ -65,7 +66,7 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async session({ session, token }: { session: any; token: any }) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       return {
         ...session,
         user: {

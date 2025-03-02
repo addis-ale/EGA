@@ -2,16 +2,22 @@ import { useState } from "react";
 import { Product } from "@prisma/client";
 import TrendingCard from "../productCards/trendingCard";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { truncateText } from "@/utils/helper";
 
 interface TrendingProps {
   trending: Product[];
   setPage: React.Dispatch<React.SetStateAction<number>>;
-
+  setLocalWishList: React.Dispatch<React.SetStateAction<Product[]>>;
   totalPages: number;
+  localWishList: Product[];
 }
 
-const Trending = ({ trending, setPage, totalPages }: TrendingProps) => {
+const Trending = ({
+  trending,
+  setPage,
+  totalPages,
+  setLocalWishList,
+  localWishList,
+}: TrendingProps) => {
   const [page, setLocalPage] = useState(1);
 
   // Handle page change
@@ -54,9 +60,9 @@ const Trending = ({ trending, setPage, totalPages }: TrendingProps) => {
           trending.map((item) => (
             <TrendingCard
               key={item.id}
-              price={item.price}
-              image={item.uploadedCoverImage}
-              name={truncateText(item.productName)}
+              product={item}
+              setLocalWishList={setLocalWishList}
+              localWishList={localWishList}
             />
           ))}
       </div>

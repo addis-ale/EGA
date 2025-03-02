@@ -1,6 +1,6 @@
 import prisma from "@/lib/prismadb";
 import { NextResponse } from "next/server";
-import { hashSync } from "bcrypt";
+import { hashSync } from "bcryptjs";
 
 import { z, ZodError } from "zod";
 const signUpSchema = z.object({

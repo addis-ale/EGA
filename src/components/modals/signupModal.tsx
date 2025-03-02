@@ -22,8 +22,8 @@ import { useDispatch } from "react-redux";
 
 // Zod Schema for Form Validation
 const signUpSchema = z.object({
-  userName: z.string().min(2, "Name must be at least 2 characters"),
-  UserEmail: z.string().email("Invalid email address"),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
@@ -50,8 +50,8 @@ export function SignUpDialog({
   } = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
-      userName: "",
-      UserEmail: "",
+      name: "",
+      email: "",
       password: "",
     },
   });
@@ -87,7 +87,7 @@ export function SignUpDialog({
 
         // Log in the user automatically
         const signInResult = await signIn("credentials", {
-          email: data.UserEmail,
+          email: data.email,
           password: data.password,
           redirect: false, // Prevent full-page reload
         });
@@ -102,7 +102,7 @@ export function SignUpDialog({
         }
 
         // Fetch user details after successful login
-        const userResponse = await fetch(`/api/user?email=${data.UserEmail}`);
+        const userResponse = await fetch(`/api/user?email=${data.email}`);
         const user = await userResponse.json();
 
         if (userResponse.ok) {
@@ -157,13 +157,11 @@ export function SignUpDialog({
                 id="name"
                 placeholder="Enter your name"
                 disabled={isLoading}
-                {...register("userName")}
+                {...register("name")}
                 className="py-1 sm:py-2 lg:py-6  text-black text-sm"
               />
-              {errors.userName && (
-                <p className="text-red-500 text-xs">
-                  {errors.userName.message}
-                </p>
+              {errors.name && (
+                <p className="text-red-500 text-xs">{errors.name.message}</p>
               )}
             </div>
 
@@ -173,13 +171,11 @@ export function SignUpDialog({
                 id="email"
                 placeholder="Enter your email"
                 disabled={isLoading}
-                {...register("UserEmail")}
+                {...register("email")}
                 className="py-1 sm:py-2 lg:py-6  text-black text-sm"
               />
-              {errors.UserEmail && (
-                <p className="text-red-500 text-xs">
-                  {errors.UserEmail.message}
-                </p>
+              {errors.email && (
+                <p className="text-red-500 text-xs">{errors.email.message}</p>
               )}
             </div>
 

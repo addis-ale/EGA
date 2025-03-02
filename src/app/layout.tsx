@@ -20,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={inter.className}>
+      <body className={`${inter.className}  overflow-y-auto scrollbar-hide`}>
         {/* Wrap with Providers to pass Redux store */}
         <Providers>{children}</Providers>
         <Toaster />

@@ -1,6 +1,6 @@
 export const getProductById = async (id: string) => {
   try {
-    const response = await fetch(`/api/getGame/${id}`, {
+    const response = await fetch(`/api/products/${id}`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
     });

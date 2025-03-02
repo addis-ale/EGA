@@ -23,8 +23,8 @@ export function NavBar() {
 
   const toggleSearch = () => setIsSearchOpen(!isSearchOpen);
   return (
-    <header className="sticky  top-0 z-50 bg-black border-b border-gray-800 w-full">
-      <div className="flex h-16  px-4 lg:px-12 items-center justify-between w-full">
+    <header className="fixed  top-0 z-50 bg-black border-b border-gray-800 w-full py-3">
+      <div className="flex h-16 px-4 lg:px-12 items-center justify-between w-full">
         <Logo />
         <Container>
           <Separator

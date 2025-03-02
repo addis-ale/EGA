@@ -11,22 +11,16 @@ export interface CurrentUser {
   email?: string | null;
   image?: string | null;
 }
+
 export const getCurrentUser = async (): Promise<CurrentUser | null> => {
   try {
     const session = await getServerSession(authOptions);
-    console.log(session + "session is ");
 
     if (!session?.user?.email) return null;
 
     const currentUser = await prisma.user.findFirst({
-      where: { UserEmail: session.user.email },
-      select: {
-        id: true,
-        role: true,
-        userName: true,
-        UserEmail: true,
-        image: true,
-      },
+      where: { email: session.user.email },
+      select: { id: true, role: true, name: true, email: true, image: true },
     });
 
     return currentUser ?? null;
