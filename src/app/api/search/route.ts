@@ -80,7 +80,7 @@ export async function GET(req: Request) {
     await prisma.$connect().catch((error) => {
       throw new Error(error);
     });
-    const resultGame = await prisma.game.findMany({
+    const resultGame = await prisma.product.findMany({
       where: filters,
       orderBy: { createdAt: "desc" },
     });
