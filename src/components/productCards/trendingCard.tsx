@@ -38,7 +38,7 @@ export default function TrendingCard({
   const router = useRouter();
   return (
     <Card
-      className="w-full max-w-md overflow-hidden rounded-xl border-0 shadow-lg "
+      className="w-full max-w-md overflow-hidden rounded-xl border-0 shadow-lg"
       onClick={() => router.push(`/product/${product.id}`)}
     >
       <div className="relative h-64 w-full sm:h-80">

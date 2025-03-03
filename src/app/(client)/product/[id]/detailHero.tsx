@@ -9,10 +9,32 @@ import { Card } from "@/components/ui/card";
 import StarRating from "@/components/starRation";
 import { useToast } from "@/hooks/use-toast";
 import { Product } from "@prisma/client";
+import { useAddCartItemMutation } from "@/state/features/cartApi";
 interface DetailedHeroProps {
   product: Product;
 }
 export default function DetailHero({ product }: DetailedHeroProps) {
+  const [addCartItem, { isLoading }] = useAddCartItemMutation();
+  const handleAddTocart = () => {
+    if (product && product.id) {
+      addCartItem({ productId: product.id, quantity: 1 })
+        .unwrap()
+        .then(() => {
+          toast({
+            title: "Product added to cart",
+            description: `${product.productName} has been added to your cart.`,
+            className: "bg-teal text-white",
+          });
+        })
+        .catch((err) => {
+          toast({
+            title: "Failed to add to cart",
+            description: "Something went wrong.",
+            variant: "destructive",
+          });
+        });
+    }
+  };
   const { toast } = useToast();
   const [url, setUrl] = useState("");
   useEffect(() => {
@@ -83,7 +105,10 @@ export default function DetailHero({ product }: DetailedHeroProps) {
 
             {/* Buttons */}
             <div className="w-full space-y-3">
-              <Button className="flex items-center gap-2 bg-green-600 px-4 py-2 hover:bg-green-700 w-full h-10 sm:h-12 text-sm sm:text-base">
+              <Button
+                className="flex items-center gap-2 bg-green-600 px-4 py-2 hover:bg-green-700 w-full h-10 sm:h-12 text-sm sm:text-base"
+                onClick={handleAddTocart}
+              >
                 <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 <span className="text-white">Add to cart</span>
               </Button>

@@ -160,10 +160,22 @@ export async function PATCH(req: Request) {
     );
   }
 }
-export async function DELETE() {
+export async function DELETE(req: Request) {
   try {
+    // Extract the product ID from the request body (which is passed for deletion)
+    const { productId } = await req.json();
+
+    if (!productId) {
+      return NextResponse.json(
+        { message: "Product ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Get the authenticated user's ID
     const userId = await getAuthenticatedUser();
 
+    // Find the cart belonging to the user
     const cart = await prisma.cart.findUnique({
       where: { userId },
     });
@@ -172,17 +184,29 @@ export async function DELETE() {
       return NextResponse.json({ message: "Cart not found" }, { status: 404 });
     }
 
-    await prisma.$transaction([
-      prisma.cartOnProduct.deleteMany({ where: { cartId: cart.id } }),
-      prisma.cart.delete({ where: { id: cart.id } }),
-    ]);
+    // Find the cart item (cartOnProduct) associated with the product to be deleted
+    const cartItem = await prisma.cartOnProduct.findFirst({
+      where: { cartId: cart.id, productId },
+    });
+
+    if (!cartItem) {
+      return NextResponse.json(
+        { message: "Product not found in cart" },
+        { status: 404 }
+      );
+    }
+
+    // Proceed to delete the product from the cart
+    await prisma.cartOnProduct.delete({
+      where: { id: cartItem.id },
+    });
 
     return NextResponse.json(
-      { message: "Cart deleted successfully" },
+      { message: "Product removed from cart successfully" },
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error deleting cart:", error);
+    console.error("Error deleting product from cart:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }
