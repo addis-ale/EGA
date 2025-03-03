@@ -9,12 +9,12 @@ import { Card } from "@/components/ui/card";
 import StarRating from "@/components/starRation";
 import { useToast } from "@/hooks/use-toast";
 import { Product } from "@prisma/client";
-import { useAddCartItemMutation } from "@/state/features/cartApi";
+import { useAddToCartMutation } from "@/state/features/cartApi";
 interface DetailedHeroProps {
   product: Product;
 }
 export default function DetailHero({ product }: DetailedHeroProps) {
-  const [addCartItem, { isLoading }] = useAddCartItemMutation();
+  const [addCartItem] = useAddToCartMutation();
   const handleAddTocart = () => {
     if (product && product.id) {
       addCartItem({ productId: product.id, quantity: 1 })
@@ -27,6 +27,7 @@ export default function DetailHero({ product }: DetailedHeroProps) {
           });
         })
         .catch((err) => {
+          console.log(err);
           toast({
             title: "Failed to add to cart",
             description: "Something went wrong.",

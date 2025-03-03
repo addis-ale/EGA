@@ -3,6 +3,8 @@ import { ShoppingCart, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Product } from "@prisma/client";
+import { useAddToCartMutation } from "@/state/features/cartApi";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProductCardProps {
   onRemove: (productId: string) => void;
@@ -10,6 +12,29 @@ interface ProductCardProps {
 }
 
 export function MiniFavoriteCard({ product, onRemove }: ProductCardProps) {
+  const { toast } = useToast();
+  const [addCartItem] = useAddToCartMutation();
+  const handleAddTocart = () => {
+    if (product && product.id) {
+      addCartItem({ productId: product.id, quantity: 1 })
+        .unwrap()
+        .then(() => {
+          toast({
+            title: "Product added to cart",
+            description: `${product.productName} has been added to your cart.`,
+            className: "bg-teal text-white",
+          });
+        })
+        .catch((err) => {
+          console.log(err);
+          toast({
+            title: "Failed to add to cart",
+            description: "Something went wrong.",
+            variant: "destructive",
+          });
+        });
+    }
+  };
   return (
     <Card className="group relative overflow-hidden border border-transparent bg-transparent h-[100px] transition-all duration-200 hover:border-gray-500">
       {/* Cancel button (Appears only on hover) */}
@@ -46,6 +71,7 @@ export function MiniFavoriteCard({ product, onRemove }: ProductCardProps) {
             variant="outline"
             size="sm"
             className="h-7 w-full bg-green-600 text-xs text-white hover:bg-green-700"
+            onClick={handleAddTocart}
           >
             <ShoppingCart className="mr-1 h-3 w-3" />
             Add to cart

@@ -71,7 +71,7 @@ export async function GET() {
     const wishlist = await prisma.wishlist.findUnique({
       where: { userId },
       include: {
-        wishlists: { include: { product: true } }, // Assuming 'wishlists' is the relation and 'product' is the related model
+        wishlists: { include: { product: true } },
       },
     });
 

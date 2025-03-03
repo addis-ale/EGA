@@ -6,7 +6,7 @@ export const truncateText = (text: string, maxLength = 5): string => {
 // Format price as currency
 export const formatPrice = (
   price: number,
-  currency: string = "USD"
+  currency: string = "ETB"
 ): string => {
   return new Intl.NumberFormat("en-US", {
     style: "currency",

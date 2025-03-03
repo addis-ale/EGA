@@ -7,9 +7,9 @@ import Trending from "@/components/clientComponents/trending";
 import Recommended from "@/components/clientComponents/recommended";
 import { useGetAllProductsQuery } from "@/state/features/productApi";
 import TrendingCardSkeleton from "@/components/productCards/trendingCardSkeleton";
-import ProductCarousel from "@/components/clientComponents/dealOfTheWeek";
 import ProductCarouselSkeleton from "@/components/productCards/productCarousalSkeleton";
 import { useGetWishlistQuery } from "@/state/features/whishlistApi";
+import ProductCarousel from "@/components/clientComponents/dealoftheweek";
 
 const ProductList = () => {
   // Trending products

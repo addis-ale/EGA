@@ -13,7 +13,6 @@ export const useRemoveFromWishlist = (
 
   const handleRemoveFromWishlist = useCallback(
     async (productId: string) => {
-      // Optimistically update the wishlist (remove the product from local state)
       const updatedWishlist = wishlist.filter((item) => item.id !== productId);
       setWishlist(updatedWishlist);
 
