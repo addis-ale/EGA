@@ -19,6 +19,11 @@ export async function POST(req: Request) {
         items: true,
       },
     });
+    if (!userCart) {
+      return NextResponse.json({
+        msg: "user does nt have cart",
+      });
+    }
     const item = userCart?.items.find((item) => item.id === id);
     if (!item) {
       return NextResponse.json({
@@ -27,6 +32,7 @@ export async function POST(req: Request) {
     }
     const updateCart = await prisma.cartItem.update({
       where: {
+        // cartId: userCart.id,
         id: id,
       },
       data: {
@@ -41,7 +47,7 @@ export async function POST(req: Request) {
     }
 
     const updatedcart = await prisma.cartItem.findMany({
-      where: { id: userCart?.id },
+      where: { cartId: userCart.id },
     });
 
     const totalPrice = updatedcart?.reduce(
