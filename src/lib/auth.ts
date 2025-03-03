@@ -3,7 +3,6 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "./prismadb";
 import { compareSync } from "bcryptjs";
 import { AuthOptions } from "next-auth";
-import { cookies } from "next/headers";
 
 export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -41,8 +40,6 @@ export const authOptions: AuthOptions = {
         if (!isPasswordMatch) {
           return null;
         }
-        const cookieStore = await cookies();
-        console.log(cookieStore);
 
         return {
           id: existedUser.id,
@@ -70,8 +67,6 @@ export const authOptions: AuthOptions = {
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async session({ session, token }: { session: any; token: any }) {
-      const cookieStore = cookies(); // Access cookies
-      console.log(cookieStore);
       return {
         ...session,
         user: {

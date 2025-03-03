@@ -20,6 +20,7 @@ const orderSchema = z.object({
 
 async function getAuthentication() {
   const user = await getCurrentUser();
+  console.log(user);
   if (!user?.id) {
     throw new Error("unauhtorized!");
   }
@@ -29,7 +30,7 @@ async function getAuthentication() {
 export async function POST(req: Request) {
   try {
     const userId = await getAuthentication();
-
+    console.log(userId);
     const body = await req.json();
     console.log(body);
     const validation = orderSchema.safeParse({
