@@ -1,34 +1,23 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prismadb";
 
-// import { getToken } from "next-auth/jwt";
 import { getCurrentUser } from "@/actions/getCurrentUser";
-
+async function getAuthenticatedUser() {
+  const user = await getCurrentUser();
+  if (!user?.id) {
+    throw new Error("User not authenticated");
+  }
+  return user.id;
+}
 export async function GET(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   req: any,
   context: { params: { userId: string } }
 ) {
   try {
-    // const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    const user = getCurrentUser();
-    if (!user) {
-      console.log("user cant found");
-    }
-    // console.log(user);
-    // if (!token) {
-    //   return NextResponse.json({
-    //     message: "user not found",
-    //     status: 403,
-    //   });
-    // }
+    console.log(req, context);
+    const userId = await getAuthenticatedUser();
 
-    // const userId = token.id;
-    // if (!userId) {
-    //   return NextResponse.json({ message: "user id required" });
-    // }
-    const { params } = context;
-    const { userId } = params;
     const getUser = await prisma.user.findUnique({
       where: { id: userId },
     });

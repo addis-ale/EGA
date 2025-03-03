@@ -21,7 +21,7 @@ export async function GET(
     // }
     // const userId = token.id;
     const { params } = context;
-    const { userId } = params;
+    const { userId } = await params;
     const validation = userIdSchema.safeParse(userId);
     if (!validation.success) {
       return NextResponse.json({
@@ -29,7 +29,7 @@ export async function GET(
         status: 422,
       });
     }
-    const getUser = await prisma.user.findMany({
+    const getUser = await prisma.user.findUnique({
       where: { id: userId },
     });
     if (!getUser) {
@@ -42,7 +42,6 @@ export async function GET(
       where: { id: userId },
       include: {
         cart: true,
-        order: true,
       },
     });
 

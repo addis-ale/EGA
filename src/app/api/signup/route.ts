@@ -4,8 +4,8 @@ import { hashSync } from "bcryptjs";
 
 import { z, ZodError } from "zod";
 const signUpSchema = z.object({
-  userName: z.string().min(2, "Name must be at least 2 characters"),
-  UserEmail: z.string().email("Invalid email address"),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   review: z
     .array(
@@ -46,14 +46,14 @@ export async function POST(req: Request) {
         error: "user credintial object needed",
       });
     }
-    const { userName, UserEmail, password } = signUpSchema.parse(body);
-    console.log(userName, UserEmail, password);
-    if (!userName || !UserEmail || !password) {
+    const { name, email, password } = signUpSchema.parse(body);
+    console.log(name, email, password + "uuuu");
+    if (!name || !email || !password) {
       return NextResponse.json({
         error: "cant parse credintial from zod",
         data: {
-          userName,
-          UserEmail,
+          name,
+          email,
         },
       });
     }
@@ -62,9 +62,9 @@ export async function POST(req: Request) {
     });
 
     const existedUser = await prisma.user.findUnique({
-      where: { UserEmail },
+      where: { email },
     });
-    console.log(existedUser);
+
     if (existedUser) {
       return NextResponse.json(
         {
@@ -77,8 +77,8 @@ export async function POST(req: Request) {
     const hashedPassword = hashSync(password, 10);
     const newUser = await prisma.user.create({
       data: {
-        userName,
-        UserEmail,
+        name,
+        email,
         password: hashedPassword,
       },
     });

@@ -1,20 +1,20 @@
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
 import prisma from "@/lib/prismadb";
+import { getCurrentUser } from "@/actions/getCurrentUser";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function GET(req: any) {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    console.log(req);
 
-    if (!token) {
+    const session = await getCurrentUser();
+    if (!session) {
       return NextResponse.json({
-        message: "denied to access",
-        status: 403,
+        msg: "denied access",
       });
     }
-    const userRoll = token.role;
-    if (userRoll !== "ADMIN") {
+    console.log(session + "session is");
+    if (session.role !== "ADMIN") {
       return NextResponse.json({
         error: "unahutorized",
         status: 403,
@@ -29,7 +29,7 @@ export async function GET(req: any) {
       return NextResponse.json({
         message: "there is no order",
       });
-    }     
+    }
     return NextResponse.json({
       message: "the order is sent",
       status: 200,

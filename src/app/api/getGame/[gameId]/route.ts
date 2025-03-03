@@ -20,14 +20,20 @@ export async function GET(
     }
     console.log(gameId);
 
-    const getGame = await prisma.game.findUnique({
+    const getGame = await prisma.product.findUnique({
       where: { id: gameId },
       include: {
         review: true,
         availableProduct: true,
       },
     });
-
+    const updategame = await prisma.product.update({
+      where: { id: gameId },
+      data: {
+        views: (getGame?.views || 0) + 1,
+      },
+    });
+    console.log(updategame);
     console.log(getGame);
     if (!getGame)
       return NextResponse.json({
@@ -36,7 +42,7 @@ export async function GET(
 
     return NextResponse.json({
       message: "return game",
-      data: getGame,
+      data: updategame,
     });
   } catch (error) {
     if (error instanceof Error) {

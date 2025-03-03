@@ -3,6 +3,7 @@
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prismadb";
 import { getServerSession } from "next-auth/next";
+import { cookies } from "next/headers";
 
 export interface CurrentUser {
   id: string;
@@ -14,6 +15,8 @@ export interface CurrentUser {
 
 export const getCurrentUser = async (): Promise<CurrentUser | null> => {
   try {
+    const cookieStore = await cookies();
+
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) return null;
@@ -22,7 +25,7 @@ export const getCurrentUser = async (): Promise<CurrentUser | null> => {
       where: { email: session.user.email },
       select: { id: true, role: true, name: true, email: true, image: true },
     });
-
+    console.log(cookieStore);
     return currentUser ?? null;
   } catch (error) {
     console.error("Error fetching current user:", error);

@@ -17,6 +17,13 @@ const gameSchema = z.object({
   productDescription: z.string().min(1, "producr description needed"),
 });
 const allowedTypes = ["TABLE_TOP", "PHYSICAL"];
+async function getAuthenticatedUser() {
+  const user = await getCurrentUser();
+  if (!user?.id) {
+    throw new Error("User not authenticated");
+  }
+  return user.id;
+}
 export async function POST(req: Request) {
   try {
     // const user = await getCurrentUser();
@@ -25,7 +32,18 @@ export async function POST(req: Request) {
     //     message: "user not found",
     //   });
     // }
+    const userId = await getAuthenticatedUser();
 
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+    const role = user?.role;
+
+    if (!role || role !== "ADMIN") {
+      return NextResponse.json({
+        msg: "unahutorized",
+      });
+    }
     const body = await req.json();
     console.log(body);
     if (!body || typeof body !== "object") {
@@ -74,7 +92,7 @@ export async function POST(req: Request) {
     await prisma.$connect().catch((error) => {
       throw new Error("dc connection failed" + error);
     });
-    const existingGame = await prisma.game.findUnique({
+    const existingGame = await prisma.product.findUnique({
       where: { productName: productName },
     });
 
@@ -97,7 +115,7 @@ export async function POST(req: Request) {
         game: game,
       });
     } else {
-      const game = await prisma.game.create({
+      const game = await prisma.product.create({
         data: {
           productName: productName,
           gameType,

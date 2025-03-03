@@ -1,11 +1,32 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prismadb";
+import { getCurrentUser } from "@/actions/getCurrentUser";
 
+async function getAuthenticatedUser() {
+  const user = await getCurrentUser();
+  if (!user?.id) {
+    throw new Error("User not authenticated");
+  }
+  return user.id;
+}
 export async function DELETE(
   req: Request,
   context: { params: { gameId: string } }
 ) {
   try {
+    const userId = await getAuthenticatedUser();
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+    const role = user?.role;
+
+    if (!role || role !== "ADMIN") {
+      return NextResponse.json({
+        msg: "unahutorized",
+      });
+    }
+
     const { params } = context;
     const { gameId } = params;
 
@@ -18,7 +39,7 @@ export async function DELETE(
     await prisma.$connect().catch((error) => {
       throw new Error("db connection failed", error);
     });
-    await prisma.game.delete({
+    await prisma.product.delete({
       where: { id: gameId },
     });
     return NextResponse.json({

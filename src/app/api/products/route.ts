@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prismadb";
-import { productSchema } from "@/schemas/productSchema";
+// import { productSchema } from "@/schemas/productSchema";
 import { Prisma } from "@prisma/client";
-import { z } from "zod";
+// import { z } from "zod";
 
 // GET ALL PRODUCTS OR FILTER BY CATEGORY, SEARCH, AND PAGINATION
 export async function GET(req: Request) {
@@ -60,31 +60,33 @@ export async function GET(req: Request) {
   }
 }
 
-// CREATE A NEW PRODUCT
-export async function POST(req: Request) {
-  try {
-    // TODO: Protect non-admin users
-    const product = await req.json();
-    const validatedProduct = productSchema.parse(product);
+// // CREATE A NEW PRODUCT
+// export async function POST(req: Request) {
+//   try {
+//     // TODO: Protect non-admin users
+//     const product = await req.json();
+//     const validatedProduct = productSchema.parse(product);
+//     const { availableProduct: available, ...other } = validatedProduct;
+//     const newProduct = await prisma.product.create({
+//       data: other,
+//     });
 
-    const newProduct = await prisma.product.create({ data: validatedProduct });
+//     return NextResponse.json(
+//       { message: "Successfully created product", product: newProduct },
+//       { status: 201 }
+//     );
+//   } catch (error) {
+//     if (error instanceof z.ZodError) {
+//       return NextResponse.json(
+//         { error: "Invalid input data", details: error.errors },
+//         { status: 400 }
+//       );
+//     }
 
-    return NextResponse.json(
-      { message: "Successfully created product", product: newProduct },
-      { status: 201 }
-    );
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Invalid input data", details: error.errors },
-        { status: 400 }
-      );
-    }
-
-    console.error("Error creating product:", error);
-    return NextResponse.json(
-      { error: "Failed to create product" },
-      { status: 500 }
-    );
-  }
-}
+//     console.error("Error creating product:", error);
+//     return NextResponse.json(
+//       { error: "Failed to create product" },
+//       { status: 500 }
+//     );
+//   }
+// }

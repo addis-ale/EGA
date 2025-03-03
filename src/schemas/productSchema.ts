@@ -11,7 +11,7 @@ export const productSchema = z.object({
     .min(0, "Discount cannot be negative")
     .max(100, "Discount cannot exceed 100%"),
   ageRestriction: z.number().min(0, "Age restriction cannot be negative"),
-  gameType: z.string().min(1, "Game type is required"),
-  availableProduct: z.number().min(0, "Available products cannot be negative"),
+  gameType: z.enum(["TABLE_TOP", "PHYSICAL"]),
+  availableProduct: z.number().min(1, "at least one item needed "),
   price: z.number().min(0, "Price must be a positive number"),
 });
