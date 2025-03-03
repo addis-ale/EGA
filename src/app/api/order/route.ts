@@ -4,9 +4,10 @@ import { z } from "zod";
 import { getCurrentUser } from "@/actions/getCurrentUser";
 
 const orderItemSchema = z.object({
-  id: z.string().uuid().optional(),
+  orderId: z.string().optional(),
+  productId: z.string(),
   quantity: z.number().int().min(1, "at least one item"),
-  cartId: z.string(),
+  price: z.number().min(1, "price must greater than 2"),
 });
 
 const orderSchema = z.object({
@@ -33,11 +34,13 @@ export async function POST(req: Request) {
     console.log(body);
     const validation = orderSchema.safeParse({
       ...body,
+      totalPrice: Number(body.totalPrice),
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       orderItem: body.orderItem?.map((order: any) => ({
         ...order,
         quantity: Number(order.quantity),
-        totalPrice: Number(order.totalPrice),
+        price: Number(order.price),
       })),
     });
     if (!validation.success) {
@@ -56,8 +59,8 @@ export async function POST(req: Request) {
     });
     if (isUserOrder) {
       for (const order of orderItem) {
-        const isItem = await prisma.orderItem.findUnique({
-          where: { productId: order.id },
+        const isItem = await prisma.orderItem.findFirst({
+          where: { productId: order.productId, orderId: isUserOrder.id },
         });
 
         if (isItem) {
@@ -66,33 +69,65 @@ export async function POST(req: Request) {
             status: 200,
           });
         }
-        const order = await prisma.orderItem.createMany({
-          data: {
-            orderId: isUserOrder.id,
-          },
-        });
-      }
-    }
-    await prisma.$connect();
-    const order = await prisma.order.create({
-      data: {
-        userId,
-        status,
-        totalPrice,
-        paymentMethod,
-        orderItem: {
-          create: orderItem?.map((order) => ({
-            quantity: order.quantity,
-          })),
-        },
-      },
-    });
+        if (orderItem && orderItem.length > 0) {
+          const orderItemTo = await prisma.orderItem.createMany({
+            data: orderItem?.map((order) => ({
+              orderId: isUserOrder.id,
+              productId: order.productId,
+              quantity: order.quantity,
+              price: order.price,
+            })),
+          });
 
-    return NextResponse.json({
-      message: "ordered succesfully",
-      status: 200,
-      data: order,
-    });
+          if (!orderItemTo) {
+            return NextResponse.json({
+              error: "order cant happend",
+              status: 409,
+            });
+          }
+
+          const totalPrice = orderItem.reduce(
+            (acc, item) => acc + item.price * item.quantity,
+            0
+          );
+
+          await prisma.order.update({
+            where: { id: isUserOrder.id },
+            data: {
+              totalPrice: isUserOrder.totalPrice + totalPrice,
+            },
+          });
+          return NextResponse.json({
+            msg: "order added",
+            status: 201,
+            orderadd: orderItemTo,
+          });
+        }
+      }
+    } else {
+      await prisma.$connect();
+      const order = await prisma.order.create({
+        data: {
+          userId,
+          status,
+          totalPrice,
+          paymentMethod,
+          orderItem: {
+            create: orderItem?.map((order) => ({
+              productId: order.productId,
+              quantity: order.quantity,
+              price: order.price,
+            })),
+          },
+        },
+      });
+
+      return NextResponse.json({
+        message: "ordered succesfully",
+        status: 200,
+        data: order,
+      });
+    }
   } catch (error) {
     return NextResponse.json({
       error: "An error occurred while processing your order.",
