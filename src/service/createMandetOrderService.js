@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import applyFabricToken from "@/services/applyFabricTokenService"; // Adjust path
+import applyFabricToken from "@/service/applyFabricTokenService"; // Adjust path
 import tools from "@/utils/tools"; // Adjust path
 import config from "@/config/config"; // Adjust path
 

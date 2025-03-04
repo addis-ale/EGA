@@ -96,7 +96,7 @@ model Cart {
        totalPrice Float
        createdAt DateTime @default(now())
        updatedAt DateTime @updatedAt
-
+         paymentStatus PaymentStatus  @default(Idel)
 
 }
 model CartItem{
@@ -104,7 +104,7 @@ model CartItem{
          cartId String
          cart Cart @relation(fields: [cartId],references: [id],onDelete: Cascade)
          productId String  @unique
-         product    Product @relation(fields: [productId], references: [id], onDelete: Cascade) // ✅ Relation added
+         product    Product @relation(fields: [productId], references: [id], onDelete: Cascade) 
          price Float
          quantity Int
          imageUruploadedCoverImagel String
@@ -122,12 +122,18 @@ model Order{
            createdAt DateTime @default(now())
            updatedAt DateTime @updatedAt
            totalPrice Float
+           
 
 }
 enum PaymentMethod{
   TeleBirr
   PickUp
 
+}
+enum PaymentStatus{
+  Idel
+  Paid
+  failed
 }
 model Wishlist {
   id        String              @id @default(auto()) @map("_id") @db.ObjectId
@@ -255,7 +261,7 @@ enum GameType{
 
 
 enum Orderstatus {
-  SHIPED
+  SHIPPED
   PENDING
   COMPLETED
   CANCELED
