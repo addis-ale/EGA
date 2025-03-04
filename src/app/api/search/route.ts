@@ -8,13 +8,14 @@ const searchSchama = z.object({
   age: z.string().optional(),
   alphabet: z.string().optional(),
   type: z.enum(["TABLE_TOP", "PHYSICAL"]).optional(),
+  limit: z.string(),
 });
 
 export async function GET(req: Request) {
   try {
     const userId = "user123";
     const url = new URL(req.url);
-    const { priceRange, publishedAt, age, alphabet, searchQuery, type } =
+    const { priceRange, publishedAt, age, alphabet, searchQuery, type, limit } =
       Object.fromEntries(url.searchParams);
     const validation = searchSchama.safeParse({
       priceRange,
@@ -24,6 +25,7 @@ export async function GET(req: Request) {
       searchQuery,
       userId,
       type,
+      limit,
     });
     if (!validation.success) {
       return NextResponse.json({
