@@ -1,8 +1,7 @@
 import config from "../../../../config/config";
 
-export async function POST(req: Request) {
+export async function POST() {
   try {
-    console.log(req);
     const response = await fetch(`${config.baseUrl}/payment/v1/token`, {
       method: "POST",
       headers: {
