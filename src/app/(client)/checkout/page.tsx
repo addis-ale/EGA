@@ -12,22 +12,22 @@ export function createNonceStr() {
   }
   return str;
 }
-const mockdata = {
-  status: "PENDING",
-  totalPrice: 20,
-  paymentMethod: "TeleBirr",
+// const mockdata = {
+//   status: "PENDING",
+//   totalPrice: 20,
+//   paymentMethod: "TeleBirr",
 
-  orderItem: [
-    {
-      productId: "product1",
-      quantity: 2,
-    },
-    {
-      productId: "product2",
-      quantity: 1,
-    },
-  ],
-};
+//   orderItem: [
+//     {
+//       productId: "product1",
+//       quantity: 2,
+//     },
+//     {
+//       productId: "product2",
+//       quantity: 1,
+//     },
+//   ],
+// };
 export default function Pay() {
   const cartId = "33333";
   const authToken = createNonceStr();
