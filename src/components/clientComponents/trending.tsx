@@ -1,23 +1,41 @@
 import { useState } from "react";
-import { Product } from "@prisma/client";
 import TrendingCard from "../productCards/trendingCard";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-interface TrendingProps {
-  trending: Product[];
-  setPage: React.Dispatch<React.SetStateAction<number>>;
-  setLocalWishList: React.Dispatch<React.SetStateAction<Product[]>>;
-  totalPages: number;
-  localWishList: Product[];
+interface PriceDetails {
+  salePrice: number;
+  rentalPricePerHour: number | null;
+  minimumRentalPeriod: number | null;
+  maximumRentalPeriod: number | null;
 }
 
-const Trending = ({
-  trending,
-  setPage,
-  totalPages,
-  setLocalWishList,
-  localWishList,
-}: TrendingProps) => {
+interface Product {
+  productName: string;
+  gameType:
+    | "TABLE_TOP"
+    | "BOARD_GAME"
+    | "VIDEO_GAME"
+    | "CARD_GAME"
+    | "ROLE_PLAYING";
+  price: number;
+  discountPercentage: number;
+  ageRestriction: number;
+  availableProduct: number;
+  productDescription: string;
+  availableForSale: boolean;
+  availableForRent: boolean;
+  productType: "SALE" | "RENT" | "BOTH";
+  priceDetails: PriceDetails;
+  createdAt: string;
+  updatedAt: string;
+}
+interface TrendingProps {
+  trending: Product[];
+  setPage: (page: number) => void;
+  totalPages: number;
+}
+
+const Trending = ({ trending, setPage, totalPages }: TrendingProps) => {
   const [page, setLocalPage] = useState(1);
 
   // Handle page change
@@ -53,17 +71,12 @@ const Trending = ({
       {/* Products Grid - Responsive */}
       <div
         className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center ${
-          trending.length < 3 ? "justify-center" : ""
+          trending?.length < 3 ? "justify-center" : ""
         }`}
       >
         {trending.length &&
           trending.map((item) => (
-            <TrendingCard
-              key={item.id}
-              product={item}
-              setLocalWishList={setLocalWishList}
-              localWishList={localWishList}
-            />
+            <TrendingCard key={item.productName} product={item} />
           ))}
       </div>
     </div>

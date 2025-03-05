@@ -1,11 +1,15 @@
+"use client";
+
+import type React from "react";
+
 import Image from "next/image";
-import { ShoppingCart, Heart } from "lucide-react";
+import { ShoppingCart, Clock, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Bungee } from "next/font/google";
 
 import { useWishlist } from "@/hooks/useWishlist";
-import { Product } from "@prisma/client";
+import type { Product } from "@prisma/client";
 import { useRouter } from "next/navigation";
 
 const bungee = Bungee({
@@ -13,69 +17,84 @@ const bungee = Bungee({
   weight: "400",
 });
 
-interface ProductCardProps {
+interface ProductListingCardProps {
   product: Product;
   currency?: string;
-  setLocalWishList: React.Dispatch<React.SetStateAction<Product[]>>;
-  localWishList: Product[];
+  rentalPrice?: number;
 }
 
-export default function TrendingCard({
+export default function ProductListingCard({
   product,
   currency = "ETB",
-  setLocalWishList,
-  localWishList,
-}: ProductCardProps) {
+  rentalPrice,
+}: ProductListingCardProps) {
   const { handleAddToWishlist } = useWishlist();
   const handleAddToWishlistWithOptimisticUpdate = async (
     e: React.MouseEvent
   ) => {
     e.stopPropagation();
-    if (!localWishList.some((item) => item.id === product.id))
-      setLocalWishList([...localWishList, product]);
     await handleAddToWishlist(product);
   };
   const router = useRouter();
+
   return (
     <Card
-      className="w-full max-w-md overflow-hidden rounded-xl border-0 shadow-lg"
+      className="w-full max-w-md overflow-hidden rounded-xl border shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer border-gray-800"
       onClick={() => router.push(`/product/${product.id}`)}
     >
-      <div className="relative h-64 w-full sm:h-80">
+      {/* Image section with favorite button */}
+      <div className="relative h-64 w-full sm:h-72">
         <Image
-          src={product.uploadedCoverImage || "/placeholder.svg"}
+          src="/imageAssets/artboard.png"
           alt={`${product.productName} product image`}
           fill
-          className="object-cover"
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
           priority
         />
-        <div className="absolute inset-0 bg-slate-800/30" />
 
-        <div className={`absolute bottom-0 left-0 p-6 text-white`}>
-          <h2
-            className={`text-4xl font-[400] tracking-wider ${bungee.className}`}
-          >
-            {product.productName}
-          </h2>
-          <p className="mt-1 text-lg font-light">
+        {/* Favorite button at top right */}
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handleAddToWishlistWithOptimisticUpdate}
+          className="absolute top-3 right-3 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white z-10 h-9 w-9"
+        >
+          <Heart className="h-5 w-5 text-gray-700 hover:text-red-500" />
+        </Button>
+      </div>
+
+      {/* Content section below the image */}
+      <div className="p-4 bg-gray-900 text-white">
+        {/* Product name */}
+        <h2
+          className={`text-xl sm:text-2xl font-[400] tracking-wider  ${bungee.className}`}
+        >
+          {product.productName}
+        </h2>
+
+        {/* Price information */}
+        <div className="flex justify-between items-center mt-2 mb-4">
+          <p className="text-lg font-medium ">
             {product.price} {currency}
           </p>
+          {rentalPrice && (
+            <p className="text-sm font-medium bg-amber-100 text-amber-800 px-2 py-1 rounded-md">
+              Rental: {rentalPrice} {currency}/day
+            </p>
+          )}
+        </div>
 
-          <div className="mt-4 flex flex-col sm:flex-row sm:gap-3 gap-2">
-            <Button className="flex items-center gap-2 bg-green-600 px-4 py-2 hover:bg-green-700 w-full sm:w-auto">
-              <ShoppingCart className="h-4 w-4 text-white" />
-              <span className="text-white">Purchase Now</span>
-            </Button>
+        {/* Action buttons */}
+        <div className="grid grid-cols-2 gap-3">
+          <Button className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700">
+            <ShoppingCart className="h-4 w-4" />
+            <span>Buy Now</span>
+          </Button>
 
-            <Button
-              variant="outline"
-              onClick={handleAddToWishlistWithOptimisticUpdate}
-              className="bg-gray-900/90"
-            >
-              <Heart className="h-4 w-4 text-gray-400" />
-              <span className="text-gray-400">Add to Wishlist</span>
-            </Button>
-          </div>
+          <Button className="flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700">
+            <Clock className="h-4 w-4" />
+            <span>Rent Now</span>
+          </Button>
         </div>
       </div>
     </Card>
