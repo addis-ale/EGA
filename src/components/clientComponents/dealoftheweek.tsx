@@ -14,6 +14,7 @@ import { Bungee } from "next/font/google";
 import { truncateText } from "@/utils/helper";
 import { Button } from "../ui/button";
 import { ShoppingCart } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const bungee = Bungee({
   subsets: ["latin"],
@@ -48,7 +49,7 @@ export default function ProductCarousel({
   // Get the current product name
   const currentProductName =
     dealOfTheWeek[currentIndex % totaldeal]?.productName;
-
+  const router = useRouter();
   return (
     <div className="w-full  text-white py-6">
       {/* Title at the top */}
@@ -58,7 +59,6 @@ export default function ProductCarousel({
         </h1>
       </div>
 
-      {/* Carousel with 3 images per slide */}
       <Carousel
         setApi={setApi}
         opts={{
@@ -76,6 +76,7 @@ export default function ProductCarousel({
             <CarouselItem
               key={`${product.id}-${index}`}
               className="pl-2 md:pl-4 basis-1/3"
+              onClick={() => router.push(`product/${product.id}`)}
             >
               <div className="aspect-square relative overflow-hidden rounded-lg border border-zinc-800">
                 <Image

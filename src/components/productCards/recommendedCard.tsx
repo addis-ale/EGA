@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Bungee } from "next/font/google";
 import { Manrope } from "next/font/google";
 import { Product } from "@prisma/client";
+import { truncateText } from "@/utils/helper";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -41,7 +42,7 @@ export function RecommendedCard({
       <div className="relative aspect-square">
         <Image
           src={product.uploadedCoverImage || "/placeholder.svg"}
-          alt={product.productName}
+          alt={truncateText(product.productName)}
           fill
           className="object-cover rounded-lg"
         />
@@ -50,7 +51,7 @@ export function RecommendedCard({
       <CardContent className="px-2">
         <div className="flex flex-col">
           <h3 className={`text-2xl font-bold uppercase ${bungee.className}`}>
-            {product.productName}
+            {truncateText(product.productName)}
           </h3>
           <p className="text-zinc-400">{product.gameType}</p>
 

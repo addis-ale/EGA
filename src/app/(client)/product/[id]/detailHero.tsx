@@ -10,11 +10,13 @@ import StarRating from "@/components/starRation";
 import { useToast } from "@/hooks/use-toast";
 import { Product } from "@prisma/client";
 import { useAddToCartMutation } from "@/state/features/cartApi";
+import { useAddToWishlistMutation } from "@/state/features/whishlistApi";
 interface DetailedHeroProps {
   product: Product;
 }
 export default function DetailHero({ product }: DetailedHeroProps) {
   const [addCartItem] = useAddToCartMutation();
+  const [addToWishlist] = useAddToWishlistMutation();
   const handleAddTocart = () => {
     if (product && product.id) {
       addCartItem({ productId: product.id, quantity: 1 })
@@ -114,7 +116,10 @@ export default function DetailHero({ product }: DetailedHeroProps) {
                 <span className="text-white">Add to cart</span>
               </Button>
 
-              <Button className="flex items-center gap-2 border-2 border-green-600 px-4 py-2 w-full h-10 sm:h-12 text-sm sm:text-base bg-transparent hover:bg-gray-700">
+              <Button
+                className="flex items-center gap-2 border-2 border-green-600 px-4 py-2 w-full h-10 sm:h-12 text-sm sm:text-base bg-transparent hover:bg-gray-700"
+                onClick={() => addToWishlist({ productId: product.id })}
+              >
                 <Heart className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 <span className="text-white">In wishlist</span>
               </Button>

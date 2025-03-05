@@ -12,7 +12,6 @@ import { useGetWishlistQuery } from "@/state/features/whishlistApi";
 import ProductCarousel from "@/components/clientComponents/dealoftheweek";
 
 const ProductList = () => {
-  // Trending products
   const [page, setPage] = useState(1);
   const LIMIT = 3;
   const { data: trending, isLoading: trendingLoading } = useGetAllProductsQuery(
@@ -23,16 +22,15 @@ const ProductList = () => {
     }
   );
 
-  const totalProducts = trending?.total || 0; // Fallback to 0 if undefined
+  const totalProducts = trending?.total || 0;
   const totalPages = Math.ceil(totalProducts / LIMIT);
 
-  // Recommended products from dummy data
+  // TODO: get recommended from you database
   const recommended = dummyData.recommendations;
 
   // Fetching wishlist data
   const { data: fav, isLoading: favLoading } = useGetWishlistQuery();
   const [localWishlist, setLocalWishlist] = useState(fav?.wishlist || []);
-  console.log(localWishlist);
 
   // Deal of the week
   const { data: dealOfTheWeek, isLoading: dealLoading } =
@@ -56,7 +54,7 @@ const ProductList = () => {
 
         {/* Trending products */}
         {trendingLoading ? (
-          <TrendingCardSkeleton limit={LIMIT} />
+          <TrendingCardSkeleton />
         ) : (
           trending && (
             <Trending

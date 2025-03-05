@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 export default function EmptyCart() {
   const router = useRouter();
   return (
-    <div className="flex items-center justify-between min-h-screen w-full bg-black p-4">
+    <div className="flex items-center justify-between min-h-screen w-full bg-black ">
       <Separator
         orientation="vertical"
         className="h-[60%] w-[3px] bg-gray-500"

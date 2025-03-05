@@ -1,38 +1,33 @@
 import { Product } from "@prisma/client";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-// Define the structure of the product in the wishlist
-
 export const wishlistApi = createApi({
-  reducerPath: "wishlistApi", // Fixed typo here ("whishlistApi" => "wishlistApi")
+  reducerPath: "wishlistApi",
   baseQuery: fetchBaseQuery({ baseUrl: "/api" }),
   endpoints: (builder) => ({
-    // Add a product to the wishlist
     addToWishlist: builder.mutation<{ message: string }, { productId: string }>(
       {
         query: ({ productId }) => ({
-          url: "/wishlist", // Corrected typo here ("whishlist" => "wishlist")
+          url: "/wishlist",
           method: "POST",
-          body: { productId }, // Send the productId as the body
+          body: { productId },
         }),
       }
     ),
 
-    // Get the user's wishlist (returns an array of products)
     getWishlist: builder.query<{ wishlist: Product[] }, void>({
       query: () => ({
-        url: "/wishlist", // Fetch wishlist data
+        url: "/wishlist",
         method: "GET",
       }),
     }),
 
-    // Optionally, add a remove from wishlist endpoint
     removeFromWishlist: builder.mutation<
       { message: string },
       { productId: string }
     >({
       query: ({ productId }) => ({
-        url: "/wishlist", // Assuming this endpoint handles removing products
+        url: "/wishlist",
         method: "DELETE",
         body: { productId },
       }),

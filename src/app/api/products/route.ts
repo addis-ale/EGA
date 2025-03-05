@@ -1,90 +1,89 @@
-import { NextResponse } from "next/server";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { NextApiRequest, NextApiResponse } from "next";
 import prisma from "@/lib/prismadb";
 import { productSchema } from "@/schemas/productSchema";
+import { ZodError } from "zod";
+import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
-import { z } from "zod";
 
-// GET ALL PRODUCTS OR FILTER BY CATEGORY, SEARCH, AND PAGINATION
-export async function GET(req: Request) {
+export async function POST(req: Request, res: Response) {
   try {
-    const { searchParams } = new URL(req.url);
-    const category = searchParams.get("category");
-    const search = searchParams.get("search") || "";
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const body = await req.json();
+    const validatedData = productSchema.parse(body);
+    const {
+      productName,
+      productDescription,
+      uploadedCoverImage,
+      discountPercentage,
+      ageRestriction,
+      gameType,
+      availableForSale,
+      availableForRent,
+      productType,
+      pricing: {
+        salePrice,
+        rentalPricePerHour,
+        minimumRentalPeriod,
+        maximumRentalPeriod,
+      },
+    } = validatedData;
 
-    const skip = (page - 1) * limit;
-
-    const whereClause: Prisma.ProductWhereInput = {};
-
-    // Apply category filtering
-    if (category) {
-      if (category === "trending") {
-        whereClause.views = { gte: 1 }; // Trending products (most viewed)
-      } else if (category === "top-rated") {
-        //TODO: Add rating table to my database
-        //   whereClause.rating = { gte: 4 }; // Only high-rated products
-      } else if (category === "recommended") {
-        //TODO: Add rating table to my database
-        //  whereClause.isRecommended = true;
-      } else if (category === "deal-of-the-week") {
-        whereClause.discountPercentage = { gt: 0 };
-      }
-    }
-
-    // Apply search filter
-    if (search) {
-      whereClause.OR = [
-        { productName: { contains: search, mode: "insensitive" } },
-        { productDescription: { contains: search, mode: "insensitive" } },
-      ];
-    }
-
-    // Fetch products
-    const products = await prisma.product.findMany({
-      where: whereClause,
-      skip,
-      take: limit,
-      orderBy: { views: "desc" }, // Newest first
+    const newProduct = await prisma.product.create({
+      data: {
+        productName,
+        productDescription,
+        uploadedCoverImage,
+        discountPercentage,
+        ageRestriction,
+        gameType,
+        availableForSale: availableForSale ?? 0,
+        availableForRent: availableForRent ?? 0,
+        productType,
+      },
     });
 
-    // Get total count for pagination
-    const total = await prisma.product.count({ where: whereClause });
-    return NextResponse.json({ products, total, page, limit });
-  } catch (error) {
-    console.error("Error fetching products:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch products" },
-      { status: 500 }
-    );
-  }
-}
-
-// CREATE A NEW PRODUCT
-export async function POST(req: Request) {
-  try {
-    // TODO: Protect non-admin users
-    const product = await req.json();
-    const validatedProduct = productSchema.parse(product);
-
-    const newProduct = await prisma.product.create({ data: validatedProduct });
+    const newPriceDetails = await prisma.priceDetails.create({
+      data: {
+        productId: newProduct.id,
+        salePrice,
+        rentalPricePerHour,
+        minimumRentalPeriod,
+        maximumRentalPeriod,
+      },
+    });
 
     return NextResponse.json(
-      { message: "Successfully created product", product: newProduct },
+      {
+        success: true,
+        product: newProduct,
+        priceDetails: newPriceDetails,
+      },
       { status: 201 }
     );
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Invalid input data", details: error.errors },
-        { status: 400 }
-      );
-    }
+    return handleError(error, res);
+  }
+}
 
-    console.error("Error creating product:", error);
+function handleError(error: unknown, res: Response) {
+  console.error("API Error:", error);
+
+  if (error instanceof ZodError) {
     return NextResponse.json(
-      { error: "Failed to create product" },
-      { status: 500 }
+      { success: false, errors: error.errors },
+      { status: 400 }
     );
   }
+
+  if (error instanceof Error) {
+    return NextResponse.json(
+      { success: false, message: "Record not found" },
+      { status: 403 }
+    );
+  }
+
+  return NextResponse.json(
+    { success: false, message: "Server Error" },
+    { status: 500 }
+  );
 }

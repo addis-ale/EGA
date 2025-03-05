@@ -1,127 +1,162 @@
-import { NextResponse } from "next/server";
 import prisma from "@/lib/prismadb";
 import { productSchema } from "@/schemas/productSchema";
+import { NextResponse } from "next/server";
+import { ZodError } from "zod";
 
-// GET SINGLE PRODUCT BY ID
 export async function GET(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const { id } = params || {}; // Safely destructure with fallback
   try {
+    const { id } = params;
+
     if (!id) {
       return NextResponse.json(
-        { error: "Product ID is required" },
+        { success: false, message: "Product ID is required" },
         { status: 400 }
       );
     }
+
     const product = await prisma.product.findUnique({
       where: { id },
-    });
-
-    if (!product) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
-    }
-
-    const updatedProduct = await prisma.product.update({
-      where: { id },
-      data: {
-        views: (product.views || 0) + 1,
+      include: {
+        priceDetails: true, // Assuming there's a relation with price details
       },
     });
 
-    return NextResponse.json(updatedProduct);
-  } catch (error) {
-    console.error("Error fetching product by ID:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch product" },
-      { status: 500 }
-    );
-  }
-}
-//UPDATE PRODUCT BY ID
-export async function PUT(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
-  //TODO: protect non-admin user
-  const { id } = params;
-
-  if (!id) {
-    return NextResponse.json(
-      { error: "Product ID is required" },
-      { status: 400 }
-    );
-  }
-
-  try {
-    // Check if the product exists
-    const productExists = await prisma.product.findUnique({ where: { id } });
-    if (!productExists) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    if (!product) {
+      return NextResponse.json(
+        { success: false, message: "Product not found" },
+        { status: 404 }
+      );
     }
 
-    // Parse the incoming request body to get the updated product data
-    const productData = await req.json();
-    const validatedProduct = productSchema.parse(productData);
-    // Update the product in the database
-    const updatedProduct = await prisma.product.update({
-      where: { id }, // Find the product by ID
-      data: validatedProduct, // Use the incoming data to update the product
-    });
-
-    return NextResponse.json(
-      { message: "Product updated successfully", product: updatedProduct },
-      { status: 200 }
-    );
+    return NextResponse.json({ success: true, product }, { status: 200 });
   } catch (error) {
-    console.error("Error updating product:", error);
+    console.error("API Error:", error);
     return NextResponse.json(
-      { error: "Failed to update product" },
+      { success: false, message: "Server Error" },
       { status: 500 }
     );
   }
 }
-
-// DELETE PRODUCT BY ID
 export async function DELETE(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  //TODO: Protect non-admin users
-  const { id } = params;
-
-  if (!id) {
-    return NextResponse.json(
-      { error: "Product ID is required" },
-      { status: 400 }
-    );
-  }
-
   try {
-    // Check if the product exists before attempting to delete
-    const productExists = await prisma.product.findUnique({
+    const { id } = params;
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, message: "Product ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Check if the product exists
+    const existingProduct = await prisma.product.findUnique({
       where: { id },
     });
 
-    if (!productExists) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    if (!existingProduct) {
+      return NextResponse.json(
+        { success: false, message: "Product not found" },
+        { status: 404 }
+      );
     }
 
-    // Attempt to delete the product by ID
+    // Delete related price details first (if applicable)
+    await prisma.priceDetails.deleteMany({
+      where: { productId: id },
+    });
+
+    // Delete the product
     await prisma.product.delete({
       where: { id },
     });
 
     return NextResponse.json(
-      { message: "Product deleted successfully" },
+      { success: true, message: "Product deleted successfully" },
       { status: 200 }
     );
   } catch (error) {
-    // Log the error and return a server-side error response
-    console.error("Error deleting product:", error);
+    console.error("API Error:", error);
     return NextResponse.json(
-      { error: "Failed to delete product" },
+      { success: false, message: "Server Error" },
+      { status: 500 }
+    );
+  }
+}
+export async function PATCH(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { id } = params;
+    const body = await req.json();
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, message: "Product ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate incoming data (Partial update)
+    const validatedData = productSchema.partial().parse(body);
+
+    // Check if the product exists
+    const existingProduct = await prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!existingProduct) {
+      return NextResponse.json(
+        { success: false, message: "Product not found" },
+        { status: 404 }
+      );
+    }
+
+    // Extract price details if they exist
+    const { pricing, ...productUpdates } = validatedData;
+
+    // Update the product
+    const updatedProduct = await prisma.product.update({
+      where: { id },
+      data: productUpdates,
+    });
+
+    let updatedPriceDetails = null;
+
+    // If pricing details are provided, update them
+    if (pricing) {
+      updatedPriceDetails = await prisma.priceDetails.updateMany({
+        where: { productId: id },
+        data: pricing,
+      });
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        product: updatedProduct,
+        priceDetails: updatedPriceDetails,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("API Error:", error);
+
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { success: false, errors: error.errors },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { success: false, message: "Server Error" },
       { status: 500 }
     );
   }

@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 
 export default function DetailHeroSkeleton() {
   return (
-    <div className="container px-4 py-6 mt-12 min-h-screen">
+    <div className="container px-4 sm:px-6 py-6 sm:py-8 mt-12 sm:mt-16 md:mt-24 lg:mt-[120px] min-h-screen">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left Section */}
         <div className="flex flex-col gap-4 w-full">
