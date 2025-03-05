@@ -7,16 +7,64 @@ const signUpSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  review: z
+    .array(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .optional(),
+  cart: z
+    .array(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .optional(),
+  order: z
+    .array(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .optional(),
+  search: z
+    .array(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .optional(),
 });
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-
+    console.log(body);
+    if (!body) {
+      return NextResponse.json({
+        error: "user credintial object needed",
+      });
+    }
     const { name, email, password } = signUpSchema.parse(body);
+    console.log(name, email, password + "uuuu");
+    if (!name || !email || !password) {
+      return NextResponse.json({
+        error: "cant parse credintial from zod",
+        data: {
+          name,
+          email,
+        },
+      });
+    }
+    await prisma.$connect().catch((error) => {
+      throw new Error("db connection error" + error);
+    });
+
     const existedUser = await prisma.user.findUnique({
       where: { email },
     });
+
     if (existedUser) {
       return NextResponse.json(
         {
@@ -31,11 +79,11 @@ export async function POST(req: Request) {
       data: {
         name,
         email,
-        hashedPassword,
+        password: hashedPassword,
       },
     });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { hashedPassword: newUserPassword, ...rest } = newUser;
+    const { password: newUserPassword, ...rest } = newUser;
     return NextResponse.json(
       {
         user: rest,
@@ -51,8 +99,7 @@ export async function POST(req: Request) {
     } else if (error instanceof Error) {
       return NextResponse.json(
         {
-          error: error.message,
-          message: "Something went wrong",
+          detial: error.message,
         },
         { status: 500 }
       );
@@ -61,5 +108,7 @@ export async function POST(req: Request) {
       { error: "Unknown error", message: "Something went wrong" },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }

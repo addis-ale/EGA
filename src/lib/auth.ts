@@ -1,5 +1,5 @@
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@auth/prisma-adapter";
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "./prismadb";
 import { compareSync } from "bcryptjs";
 import { AuthOptions } from "next-auth";
@@ -8,7 +8,9 @@ export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(prisma),
   session: {
     strategy: "jwt",
+    maxAge: 60 * 60 * 24 * 7,
   },
+  secret: process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: "/login",
   },
@@ -31,15 +33,14 @@ export const authOptions: AuthOptions = {
         if (!existedUser) {
           return null;
         }
-        const isPasswordMatch = compareSync(
+        const isPasswordMatch = await compareSync(
           credentials.password,
-          existedUser.hashedPassword
+          existedUser.password
         );
         if (!isPasswordMatch) {
           return null;
         }
 
-        // Any object returned will be saved in `user` property of the JWT
         return {
           id: existedUser.id,
           name: existedUser.name,

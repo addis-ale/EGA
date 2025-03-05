@@ -1,6 +1,6 @@
 // Truncate long text to a given length
 export const truncateText = (text: string, maxLength = 5): string => {
-  return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+  return text?.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
 };
 
 // Format price as currency

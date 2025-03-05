@@ -22,7 +22,6 @@ export const getCurrentUser = async (): Promise<CurrentUser | null> => {
       where: { email: session.user.email },
       select: { id: true, role: true, name: true, email: true, image: true },
     });
-
     return currentUser ?? null;
   } catch (error) {
     console.error("Error fetching current user:", error);

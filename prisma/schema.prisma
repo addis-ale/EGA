@@ -1,17 +1,96 @@
-datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
-}
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
   provider = "prisma-client-js"
 }
 
-enum Role {
-  USER
-  ADMIN
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
+model User {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+    name String
+    email String @unique
+    emailVerfied DateTime?
+    password String
+    image String?
+    role UserRoll  @default(USER)
+    review Review[]
+    cart Cart[]
+    order Order[]
+    wishlist Wishlist[]
+    search SearchHistory[]
+    accounts  Account[]
+    sessions  Session[]
+     Authenticator Authenticator[]
+     rental Rental[]
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+enum UserRoll {
+   ADMIN
+  USER
+}
+
+
+model Product {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  productName  String  
+  gameType   GameType 
+  uploadedCoverImage  String?
+  uploadedVideo  String?
+  discountPercentage  Int
+  priceDetails        PriceDetails?
+   availableForSale    Int?   @default(0)    
+  availableForRent    Int?    @default(0)
+    productDescription String
+  ageRestriction  String
+    views            Int      @default(0) 
+  salesCount       Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  availableProduct Available[]
+  rental Rental[]
+  review  Review[]
+  Wishlist WishlistOnProduct[]
+  productType        ProductType    @default(SALE)
+
+
+  CartItem CartItem[]
+
+  OrderItem OrderItem[]
+
+}
+model PriceDetails {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId           String   @unique @db.ObjectId
+  salePrice           Float?   // Sale price (if applicable)
+  rentalPricePerHour  Float?   // Rental price per hour (if applicable)
+  minimumRentalPeriod Int?     // Minimum rental period in hours/days
+  maximumRentalPeriod Int?     // Maximum rental period in hours/days
+
+  product            Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+// model CartOnProduct {
+//   id          String   @id @default(auto()) @map("_id") @db.ObjectId
+//   cartId      String   @db.ObjectId
+//   productId   String   @db.ObjectId
+//   quantity    Int?     // Only for sale items
+//   rentalStart DateTime? // Only for rentals
+//   rentalEnd   DateTime? // Only for rentals
+//   type        ProductType // SALE or RENT
+  
+//   cart       Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+//   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+//   @@unique([cartId, productId, rentalStart, rentalEnd]) // Ensures rental uniqueness
+// }
 enum ProductType {
   SALE
   RENT
@@ -23,83 +102,86 @@ enum ProductStatus {
   RENTED_OUT
   OUT_OF_STOCK
 }
-
-model User {
-  id            String            @id @default(auto()) @map("_id") @db.ObjectId
-  name          String
-  email         String            @unique
-  image         String?
-  hashedPassword String
-  role          Role              @default(USER)
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  cart          Cart?
-  wishlist      Wishlist?
-  orders        Order[]
-  rentals       Rental[]
-  reviews       Review[]
-  reactions     ReviewReaction[]
-  searchHistory SearchHistory[]
+model Available {
+  id               String  @id @default(auto()) @map("_id") @db.ObjectId
+gameId String   @db.ObjectId @unique
+game Product @relation(fields: [gameId],references: [id],onDelete: Cascade)
+availableProduct Int @default(0)
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
 }
 
-model Product {
-  id                  String        @id @default(auto()) @map("_id") @db.ObjectId
-  productName         String
-  productDescription  String
-  uploadedCoverImage  String
-  discountPercentage  Float         @default(0)
-  ageRestriction      String
-  gameType            String
-  availableForSale    Int      @default(0)    
-  availableForRent    Int          
-  priceDetails        PriceDetails?
-  views              Int            @default(0)
-  salesCount         Int            @default(0)
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
-  productType        ProductType    @default(SALE)
-  status             ProductStatus  @default(AVAILABLE) 
-  cartItems          CartOnProduct[]
-  wishlists          WishlistOnProduct[]
-  orders             OrderItem[]
-  rentals            Rental[]
-  reviews            Review[]
-}
+model Review {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+     user  User @relation(fields:[userId],references: [id])
+     userId String
+     game Product @relation(fields: [productId],references: [id],onDelete: Cascade)
+     productId String
+     comment String 
+     Likes Int?
+     disLikes  Int?
+     rating Int @default(1)
+      createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-model PriceDetails {
-  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
-  productId           String   @unique @db.ObjectId
-  salePrice           Float?   // Sale price (if applicable)
-  rentalPricePerHour  Float?   // Rental price per hour (if applicable)
-  minimumRentalPeriod Int?     // Minimum rental period in hours/days
-  maximumRentalPeriod Int?     // Maximum rental period in hours/days
-
-  product            Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model Cart {
-  id        String           @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String           @unique @db.ObjectId 
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cartItems CartOnProduct[]  
-  createdAt DateTime         @default(now())
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+       userId String @unique
+       user User @relation(fields: [userId], references: [id],onDelete: Cascade)
+       items CartItem[]
+       totalPrice Float
+       createdAt DateTime @default(now())
+       updatedAt DateTime @updatedAt
+         paymentStatus PaymentStatus  @default(Idel)
+
 }
+model CartItem{
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+         cartId String
+         cart Cart @relation(fields: [cartId],references: [id],onDelete: Cascade)
+         productId String  @unique
+         product    Product @relation(fields: [productId], references: [id], onDelete: Cascade) 
+         price Float
+         quantity Int
+         salesType  SalesType 
+         RentedAt DateTime?   @default(now())
+         datedAt DateTime?    @default(now())
+         imageUruploadedCoverImagel String
 
-model CartOnProduct {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  cartId      String   @db.ObjectId
-  productId   String   @db.ObjectId
-  quantity    Int?     // Only for sale items
-  rentalStart DateTime? // Only for rentals
-  rentalEnd   DateTime? // Only for rentals
-  type        ProductType // SALE or RENT
-  
-  cart       Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  @@unique([cartId, productId, rentalStart, rentalEnd]) // Ensures rental uniqueness
+
+} 
+enum SalesType{
+  Rent
+  sale
+  Both
+
 }
+model Order{
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+           userId String   
+           user User @relation(fields: [userId],references: [id])
+           orderItem OrderItem[]
+           status Orderstatus @default(PENDING)
+           paymentMethod PaymentMethod
+           createdAt DateTime @default(now())
+           updatedAt DateTime @updatedAt
+           totalPrice Float
+           
 
+}
+enum PaymentMethod{
+  TeleBirr
+  PickUp
+
+}
+enum PaymentStatus{
+  Idel
+  Paid
+  failed
+}
 model Wishlist {
   id        String              @id @default(auto()) @map("_id") @db.ObjectId
   userId    String              @unique @db.ObjectId 
@@ -107,7 +189,6 @@ model Wishlist {
   wishlists WishlistOnProduct[] 
   createdAt DateTime            @default(now())
 }
-
 model WishlistOnProduct {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   wishlistId String   @db.ObjectId
@@ -118,27 +199,117 @@ model WishlistOnProduct {
   @@unique([wishlistId, productId]) 
 }
 
-model Order {
-  id        String      @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String      @db.ObjectId
-  totalPrice Float
-  paymentMethod String  // "Telebirr", "Pay at Pickup"
-  status     String     @default("Pending") // "Pending", "Paid", "Cancelled"
-  createdAt  DateTime   @default(now())
-  
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items      OrderItem[]
+
+model OrderItem{
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+          orderId String
+          order Order @relation(fields: [orderId],references: [id],onDelete: Cascade)
+          productId String 
+          product    Product @relation(fields: [productId], references: [id], onDelete: Cascade) 
+          quantity Int
+          price Float
+          salesType SalesType 
+         RentedAt DateTime?   @default(now())
+         datedAt DateTime?    @default(now())
+
+ 
+}
+model SearchHistory {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+            userId String   @unique
+            user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+            search Search[]
+            createdAt DateTime @default(now())
+            updatedAt DateTime @updatedAt
+
+
+
+}
+model Search{
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+            searchId String
+            searchHitory SearchHistory @relation(fields: [searchId],references: [id],onDelete: Cascade)
+            searchQuery String 
+
+}
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.String
+  access_token      String? @db.String
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.String
+  session_state     String?
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+ 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@unique([provider, providerAccountId])
 }
 
-model OrderItem {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  orderId    String   @db.ObjectId
-  productId  String   @db.ObjectId
-  quantity   Int      @default(1) 
-  price      Float
-  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
+ 
+model VerificationToken {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  identifier String
+  token      String
+  expires    DateTime
+ 
+  @@unique([identifier, token])
+}
+ 
+model Authenticator {
+  credentialID         String  @id @map("_id")
+  userId               String  @db.ObjectId
+  providerAccountId    String
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+ 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@unique([userId, credentialID])
+}
+
+
+enum GameType{
+  TABLE_TOP
+  PHYSICAL
+
+}
+
+
+
+
+
+
+
+
+enum Orderstatus {
+  SHIPPED
+  PENDING
+  COMPLETED
+  CANCELED
+}
+
 
 model Rental {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -146,49 +317,8 @@ model Rental {
   productId  String   @db.ObjectId
   rentalStart DateTime
   rentalEnd   DateTime
-  status      String   @default("Active") // "Active", "Returned", "Overdue"
+  status      String?  @default("Active") // "Active", "Returned", "Overdue"
 
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-}
-
-model Review {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String   @db.ObjectId
-  productId String   @db.ObjectId
-  rating    Int      @default(0) // 1-5 stars
-  comment   String?
-  createdAt DateTime @default(now())
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  reactions ReviewReaction[]
-
-  @@unique([userId, productId]) // One review per user per product
-}
-
-enum ReactionType {
-  LIKE
-  DISLIKE
-}
-
-model ReviewReaction {
-  id       String       @id @default(auto()) @map("_id") @db.ObjectId
-  userId   String       @db.ObjectId
-  reviewId String       @db.ObjectId
-  type     ReactionType // LIKE or DISLIKE
-
-  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  review   Review  @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, reviewId]) // One reaction per user per review
-}
-
-model SearchHistory {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String   @db.ObjectId
-  query     String   // What the user searched for
-  searchedAt DateTime @default(now())
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
