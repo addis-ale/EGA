@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import prisma from "@/lib/prismadb";
 import { z } from "zod";
 import { getCurrentUser } from "@/actions/getCurrentUser";
@@ -7,13 +6,15 @@ const orderItemSchema = z.object({
   productId: z.string(),
   quantity: z.number().int().min(1, "at least one item"),
   price: z.number().min(1, "price must greater than 1"),
+  salesType: z.enum(["Rent", "sale"]),
+  datedAt: z.string().optional(),
 });
 
 const orderSchema = z.object({
   // userId: z.string().min(1, "user id require"),
   orderItem: z.array(orderItemSchema),
   totalPrice: z.number().min(0, "price must be positive"),
-  // paymentMethod: z.enum(["TeleBirr", "PickUp"]),
+  paymentMethod: z.enum(["TeleBirr", "PickUp"]),
   status: z.enum(["SHIPPED", "PENDING", "COMPLETED", "CANCELED"]),
 });
 
@@ -25,12 +26,19 @@ async function getAuthentication() {
   }
   return user.id;
 }
-
-export default async function POST(req: Request) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const parameter = z.object({
+  cart_id: z.string(),
+  paymentMethod: z.enum(["TeleBirr", "PickUp"]),
+});
+type creatOrderProps = z.infer<typeof parameter>;
+export default async function AddOrder({
+  cart_id,
+  paymentMethod,
+}: creatOrderProps) {
   try {
     const userId = await getAuthentication();
     console.log(userId);
-    const { cart_id, paymentMethod } = await req.json();
     const orderTotalPrice = await prisma.cart.findFirst({
       where: { id: cart_id },
       select: { totalPrice: true },
@@ -40,14 +48,14 @@ export default async function POST(req: Request) {
       where: { cartId: cart_id },
     });
     if (!orderItemAdd) {
-      return NextResponse.json({
-        msg: "item not found",
-        status: 404,
-      });
+      console.log("cart not found");
     }
     const validation = orderSchema.safeParse({
+      paymentMethod: paymentMethod,
       totalPrice: orderTotalPrice?.totalPrice,
       orderItem: orderItemAdd.map((item) => ({
+        datedAt: item.datedAt,
+        salesType: item.salesType,
         productId: item.productId,
         quantity: Number(item?.quantity),
         price: Number(item.price),
@@ -55,10 +63,7 @@ export default async function POST(req: Request) {
     });
 
     if (!validation.success) {
-      return NextResponse.json({
-        error: validation.error.format(),
-        status: 422,
-      });
+      throw new Error("Invalid data");
     }
     const { orderItem, status, totalPrice } = validation.data;
 
@@ -71,6 +76,12 @@ export default async function POST(req: Request) {
         paymentMethod,
         orderItem: {
           create: orderItem?.map((order) => ({
+            salesType: order.salesType,
+            RentedAt: order.salesType === "Rent" ? new Date() : null,
+            datedAt:
+              order.salesType === "Rent" && order.datedAt
+                ? new Date(order.datedAt)
+                : null,
             productId: order.productId,
             quantity: order.quantity,
             price: order.price,
@@ -79,16 +90,8 @@ export default async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({
-      message: "ordered succesfully",
-      status: 200,
-      data: order,
-    });
+    return order;
   } catch (error) {
-    return NextResponse.json({
-      error: "An error occurred while processing your order.",
-      details: error instanceof Error ? error.message : error,
-      status: 500,
-    });
+    console.log("error happend" + error);
   }
 }

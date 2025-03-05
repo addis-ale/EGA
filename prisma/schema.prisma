@@ -29,6 +29,7 @@ model User {
     accounts  Account[]
     sessions  Session[]
      Authenticator Authenticator[]
+     rental Rental[]
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 }
@@ -45,8 +46,10 @@ model Product {
   uploadedCoverImage  String?
   uploadedVideo  String?
   discountPercentage  Int
-  price        Int
-  productDescription String
+  priceDetails        PriceDetails?
+   availableForSale    Int      @default(0)    
+  availableForRent    Int          
+    productDescription String
   ageRestriction  Int
   gameguide      Gameguides[]
     views            Int      @default(0) 
@@ -54,15 +57,52 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   availableProduct Available[]
+  rental Rental[]
   review  Review[]
   Wishlist WishlistOnProduct[]
-  
-
+    cartItems          CartOnProduct[]
+  productType        ProductType    @default(SALE)
+  status             ProductStatus  @default(AVAILABLE) 
 
 
   CartItem CartItem[]
 
   OrderItem OrderItem[]
+}
+model PriceDetails {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId           String   @unique @db.ObjectId
+  salePrice           Float?   // Sale price (if applicable)
+  rentalPricePerHour  Float?   // Rental price per hour (if applicable)
+  minimumRentalPeriod Int?     // Minimum rental period in hours/days
+  maximumRentalPeriod Int?     // Maximum rental period in hours/days
+
+  product            Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+model CartOnProduct {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  cartId      String   @db.ObjectId
+  productId   String   @db.ObjectId
+  quantity    Int?     // Only for sale items
+  rentalStart DateTime? // Only for rentals
+  rentalEnd   DateTime? // Only for rentals
+  type        ProductType // SALE or RENT
+  
+  cart       Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId, rentalStart, rentalEnd]) // Ensures rental uniqueness
+}
+enum ProductType {
+  SALE
+  RENT
+  BOTH
+}
+
+enum ProductStatus {
+  AVAILABLE
+  RENTED_OUT
+  OUT_OF_STOCK
 }
 model Available {
   id               String  @id @default(auto()) @map("_id") @db.ObjectId
@@ -97,6 +137,7 @@ model Cart {
        createdAt DateTime @default(now())
        updatedAt DateTime @updatedAt
          paymentStatus PaymentStatus  @default(Idel)
+           cartItems CartOnProduct[]
 
 }
 model CartItem{
@@ -107,14 +148,19 @@ model CartItem{
          product    Product @relation(fields: [productId], references: [id], onDelete: Cascade) 
          price Float
          quantity Int
-         Rented Boolean
-         RentedAt String?
-         datedAt String?
+         salesType  SalesType 
+         RentedAt DateTime?   @default(now())
+         datedAt DateTime?    @default(now())
          imageUruploadedCoverImagel String
 
 
 
 } 
+enum SalesType{
+  Rent
+  sale
+
+}
 model Order{
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
            userId String   
@@ -165,12 +211,13 @@ model OrderItem{
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
           orderId String
           order Order @relation(fields: [orderId],references: [id],onDelete: Cascade)
-          productId String @unique
-                   product    Product @relation(fields: [productId], references: [id], onDelete: Cascade) 
-          
+          productId String 
+          product    Product @relation(fields: [productId], references: [id], onDelete: Cascade) 
           quantity Int
           price Float
-        
+          salesType SalesType 
+         RentedAt DateTime?   @default(now())
+         datedAt DateTime?    @default(now())
 
  
 }
@@ -268,4 +315,17 @@ enum Orderstatus {
   PENDING
   COMPLETED
   CANCELED
+}
+
+
+model Rental {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  productId  String   @db.ObjectId
+  rentalStart DateTime
+  rentalEnd   DateTime
+  status      String   @default("Active") // "Active", "Returned", "Overdue"
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }

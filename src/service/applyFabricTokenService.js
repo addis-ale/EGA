@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
 import config from "../config/config";
-export default async function POST() {
+export default async function applyFabricToken() {
   try {
     const response = await fetch(`${config.baseUrl}/payment/v1/token`, {
       method: "POST",
@@ -18,12 +17,9 @@ export default async function POST() {
     }
 
     const result = await response.json();
-    return NextResponse.json(result);
+    return result;
   } catch (error) {
     console.error("Error fetching Fabric token:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return { error: error.message };
   }
 }

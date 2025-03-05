@@ -7,8 +7,9 @@ const config = {
   //   merchantCode: process.env.NEXT_PUBLIC_MERCHANT_CODE || "your-merchant-code",
   //   appSecret: process.env.FABRIC_APP_SECRET, // Sensitive, do not expose publicly
   // };
-  baseUrl:
-    "https://developerportal.ethiotelebirr.et:38443/apiaccess/payment/gateway",
+  // "https://developerportal.ethiotelebirr.et:38443/apiaccess/payment/gateway",
+
+  baseUrl: "https://196.188.120.3:38443/apiaccess/payment/gateway",
 
   fabricAppId: "c4182ef8-9249-458a-985e-06d191f4d505",
   appSecret: "fad0f06383c6297f545876694b974599",

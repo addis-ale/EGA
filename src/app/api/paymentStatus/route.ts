@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prismadb";
-import order from "src/service/order";
+import AddOrder from "src/service/order";
 export async function POST(req: Request) {
   const data = await req.json();
-  const { cart_id, status } = data;
+  const { cart_id, status, paymentMethod } = data;
   if (!cart_id) {
     return NextResponse.json({
       msg: "cart_id need",
@@ -17,9 +17,11 @@ export async function POST(req: Request) {
       paymentStatus: status === "SUCCESS" ? "Paid" : "failed",
     },
   });
-
   if (status === "SUCCESS") {
-    const addorder = await order(req);
+    const addorder = await AddOrder({
+      cart_id,
+      paymentMethod: paymentMethod,
+    });
     if (!addorder) {
       return NextResponse.json({
         msg: "error on adding order",

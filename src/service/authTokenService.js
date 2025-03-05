@@ -1,9 +1,8 @@
-import { NextResponse } from "next/server";
 import applyFabricToken from "@/service/applyFabricTokenService";
 import * as tools from "../utils/tools";
 import config from "@/config/config";
 
-export default async function POST(req) {
+export default async function applyFabricservice(req) {
   try {
     const body = await req.json();
     const appToken = body.authToken;

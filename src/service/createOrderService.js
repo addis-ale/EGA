@@ -1,10 +1,14 @@
-import { NextResponse } from "next/server";
 import applyFabricToken from "@/service/applyFabricTokenService"; // Adjust path
 import config from "@/config/config"; // Adjust path
+import * as tools from "../utils/tools";
 
-export default async function POST(req) {
+export default async function createOrder({
+  title,
+  amount,
+  cartId,
+  authToken,
+}) {
   try {
-    const { title, amount, authToken, cartId } = await req.json(); // Extract authToken from request body
     console.log(`Title: ${title}, Amount: ${amount}, Auth Token: ${authToken}`);
 
     // Step 1: Get Fabric Token
@@ -29,13 +33,9 @@ export default async function POST(req) {
     const paymentUrl = `${config.webBaseUrl}${rawRequest}&version=1.0&trade_type=Checkout`;
 
     // Return success response with the payment URL
-    return NextResponse.json({ success: true, paymentUrl });
+    return { success: true, paymentUrl };
   } catch (error) {
-    console.error("Error creating order:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to create order" },
-      { status: 500 }
-    );
+    console.error("Error creating order:", error.message);
   }
 }
 
@@ -48,7 +48,7 @@ async function requestCreateOrder(
   cartId
 ) {
   try {
-    let reqObject = createRequestObject(cartId, title, amount, authToken); // Include authToken in the request body
+    let reqObject = createRequestObject(title, amount, cartId, authToken); // Include authToken in the request body
 
     const response = await fetch(
       `${config.baseUrl}/payment/v1/merchant/preOrder`,
@@ -63,9 +63,9 @@ async function requestCreateOrder(
       }
     );
 
-    if (!response.ok) throw new Error("Failed to create order");
-
-    return await response.json(); // Return the order response
+    if (!response.ok) throw new Error("Failed to create request object");
+    const data = await response.json();
+    return data; // Return the order response
   } catch (error) {
     console.error("Request error:", error);
     throw error; // Re-throw error to be handled in the outer catch block
