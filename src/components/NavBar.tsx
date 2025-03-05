@@ -20,7 +20,6 @@ import Container from "./container";
 
 export function NavBar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-
   const toggleSearch = () => setIsSearchOpen(!isSearchOpen);
   return (
     <header className="fixed  top-0 z-50 bg-black border-b border-gray-800 w-full py-3">

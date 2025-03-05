@@ -4,7 +4,7 @@ import Container from "@/components/container";
 import { useGetProductByIdQuery } from "@/state/features/productApi";
 import { useParams } from "next/navigation";
 import DetailHero from "./detailHero";
-import { dummyReviews } from "../../../../../data/dummyReview";
+import { dummyReviews } from "../../../../../../data/dummyReview";
 import { ReviewCarousel } from "@/components/clientComponents/reviewSection";
 import DetailHeroSkeleton from "@/components/clientComponents/detailHeroSkeleton";
 
