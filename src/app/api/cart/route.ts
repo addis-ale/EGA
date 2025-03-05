@@ -7,6 +7,8 @@ import { getCurrentUser } from "@/actions/getCurrentUser";
 const cartitemschema = z.object({
   id: z.string(),
   price: z.number(),
+  datedAt: z.string(),
+  salesType: z.enum(["sale", "Rent", "Both"]),
   quantity: z.number().int().min(1, "at least 1 item required"),
   imageUruploadedCoverImagel: z.string().url(),
 });
@@ -85,6 +87,9 @@ export async function POST(req: Request) {
       if (items && items.length > 0) {
         const newUserItem = await prisma.cartItem.createMany({
           data: items?.map((item) => ({
+            salesType: item.salesType,
+            RentedAt: item.salesType === "Rent" ? new Date() : null,
+            datedAt: item.salesType === "Rent" ? new Date(item.datedAt) : null,
             productId: item.id,
             cartId: isUserhavecart.id,
             price: item.price,
@@ -118,6 +123,13 @@ export async function POST(req: Request) {
           items: {
             create: items?.map((cartitem) => ({
               productId: cartitem.id,
+              salesType: cartitem.salesType,
+              RentedAt: cartitem.salesType === "Rent" ? new Date() : null,
+              datedAt:
+                cartitem.salesType === "Rent"
+                  ? new Date(cartitem.datedAt)
+                  : null,
+
               price: cartitem.price,
               quantity: cartitem.quantity,
               imageUruploadedCoverImagel: cartitem.imageUruploadedCoverImagel,

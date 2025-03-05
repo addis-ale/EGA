@@ -41,17 +41,16 @@ enum UserRoll {
 
 model Product {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
-  productName  String  @unique
+  productName  String  
   gameType   GameType 
   uploadedCoverImage  String?
   uploadedVideo  String?
   discountPercentage  Int
   priceDetails        PriceDetails?
-   availableForSale    Int      @default(0)    
-  availableForRent    Int          
+   availableForSale    Int?   @default(0)    
+  availableForRent    Int?    @default(0)
     productDescription String
-  ageRestriction  Int
-  gameguide      Gameguides[]
+  ageRestriction  String
     views            Int      @default(0) 
   salesCount       Int      @default(0)
   createdAt DateTime @default(now())
@@ -60,14 +59,13 @@ model Product {
   rental Rental[]
   review  Review[]
   Wishlist WishlistOnProduct[]
-    cartItems          CartOnProduct[]
   productType        ProductType    @default(SALE)
-  status             ProductStatus  @default(AVAILABLE) 
 
 
   CartItem CartItem[]
 
   OrderItem OrderItem[]
+
 }
 model PriceDetails {
   id                  String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -79,20 +77,20 @@ model PriceDetails {
 
   product            Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
-model CartOnProduct {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  cartId      String   @db.ObjectId
-  productId   String   @db.ObjectId
-  quantity    Int?     // Only for sale items
-  rentalStart DateTime? // Only for rentals
-  rentalEnd   DateTime? // Only for rentals
-  type        ProductType // SALE or RENT
+// model CartOnProduct {
+//   id          String   @id @default(auto()) @map("_id") @db.ObjectId
+//   cartId      String   @db.ObjectId
+//   productId   String   @db.ObjectId
+//   quantity    Int?     // Only for sale items
+//   rentalStart DateTime? // Only for rentals
+//   rentalEnd   DateTime? // Only for rentals
+//   type        ProductType // SALE or RENT
   
-  cart       Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+//   cart       Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+//   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  @@unique([cartId, productId, rentalStart, rentalEnd]) // Ensures rental uniqueness
-}
+//   @@unique([cartId, productId, rentalStart, rentalEnd]) // Ensures rental uniqueness
+// }
 enum ProductType {
   SALE
   RENT
@@ -137,7 +135,6 @@ model Cart {
        createdAt DateTime @default(now())
        updatedAt DateTime @updatedAt
          paymentStatus PaymentStatus  @default(Idel)
-           cartItems CartOnProduct[]
 
 }
 model CartItem{
@@ -159,6 +156,7 @@ model CartItem{
 enum SalesType{
   Rent
   sale
+  Both
 
 }
 model Order{
@@ -201,12 +199,7 @@ model WishlistOnProduct {
   @@unique([wishlistId, productId]) 
 }
 
-model Gameguides{
-    id                String  @id @default(auto()) @map("_id") @db.ObjectId
-    productId String
-    product Product @relation(fields: [productId],references: [id])
-    instructions String
-}
+
 model OrderItem{
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
           orderId String
@@ -324,7 +317,7 @@ model Rental {
   productId  String   @db.ObjectId
   rentalStart DateTime
   rentalEnd   DateTime
-  status      String   @default("Active") // "Active", "Returned", "Overdue"
+  status      String?  @default("Active") // "Active", "Returned", "Overdue"
 
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)

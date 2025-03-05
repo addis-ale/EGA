@@ -63,12 +63,27 @@ export async function POST(req: Request) {
 
     await prisma.$transaction(
       orderItemAdd.map((item) =>
-        prisma.available.update({
-          where: { gameId: item.productId },
+        prisma.product.update({
+          where: {
+            id: item.productId,
+          },
           data: {
-            availableProduct: {
-              decrement: item.quantity,
-            },
+            availableForSale:
+              item.salesType === "sale"
+                ? {
+                    decrement: item.quantity,
+                  }
+                : {
+                    increment: 0,
+                  },
+            availableForRent:
+              item.salesType === "Rent"
+                ? {
+                    decrement: item.quantity,
+                  }
+                : {
+                    increment: 0,
+                  },
           },
         })
       )
