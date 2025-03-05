@@ -26,14 +26,56 @@ export async function POST(req: Request) {
         status: 401,
       });
     }
-    const deleteCart = await prisma.cart.delete({
-      where: { id: cart_id },
+    const orderItemAdd = await prisma.cartItem.findMany({
+      where: { cartId: cart_id },
     });
-    if (!deleteCart) {
+    if (!orderItemAdd) {
       return NextResponse.json({
-        msg: "error occured when delete cart",
+        msg: "no item in the cart",
+        status: 404,
       });
     }
+    // for (const item of orderItemAdd) {
+    //   const ITEM = await prisma.available.findUnique({
+    //     where: { gameId: item.productId },
+    //   });
+    //   if (!ITEM) {
+    //     return NextResponse.json({
+    //       msg: "item cant find",
+    //       status: 404,
+    //     });
+    //   }
+    //   const ITEMNUMBER = ITEM?.availableProduct;
+    //   if (ITEMNUMBER < item.quantity) {
+    //     return NextResponse.json({
+    //       msg: `Not enough stock for product ${item.productId}`,
+    //     });
+    //   }
+    //   await prisma.available.update({
+    //     where: { id: ITEM?.id },
+    //     data: {
+    //       availableProduct: ITEMNUMBER - item.quantity,
+    //     },
+    //   });
+    // }
+
+    await prisma.$transaction(
+      orderItemAdd.map((item) =>
+        prisma.available.update({
+          where: { gameId: item.productId },
+          data: {
+            availableProduct: {
+              decrement: item.quantity,
+            },
+          },
+        })
+      )
+    );
+
+    await prisma.cart.delete({
+      where: { id: cart_id },
+    });
+
     return NextResponse.json({
       msg: "order added",
       data: "order created",

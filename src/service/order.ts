@@ -54,9 +54,6 @@ export default async function POST(req: Request) {
       })),
     });
 
-    const body = await req.json();
-    console.log(body);
-
     if (!validation.success) {
       return NextResponse.json({
         error: validation.error.format(),
