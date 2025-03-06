@@ -1,5 +1,4 @@
 import prisma from "@/lib/prismadb";
-import { productSchema } from "@/schemas/productSchema";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
@@ -20,7 +19,8 @@ export async function GET(
     const product = await prisma.product.findUnique({
       where: { id },
       include: {
-        priceDetails: true, // Assuming there's a relation with price details
+        priceDetails: true,
+        uploadedVideo: true,
       },
     });
 
@@ -104,7 +104,7 @@ export async function PATCH(
     }
 
     // Validate incoming data (Partial update)
-    const validatedData = productSchema.partial().parse(body);
+    const validatedData = body;
 
     // Check if the product exists
     const existingProduct = await prisma.product.findUnique({
@@ -119,7 +119,7 @@ export async function PATCH(
     }
 
     // Extract price details if they exist
-    const { pricing, ...productUpdates } = validatedData;
+    const { pricing, uploadedVideo, ...productUpdates } = validatedData;
 
     // Update the product
     const updatedProduct = await prisma.product.update({
@@ -128,6 +128,7 @@ export async function PATCH(
     });
 
     let updatedPriceDetails = null;
+    let updatedVidieo = null;
 
     // If pricing details are provided, update them
     if (pricing) {
@@ -136,12 +137,19 @@ export async function PATCH(
         data: pricing,
       });
     }
+    if (uploadedVideo) {
+      updatedVidieo = await prisma.videoUploaded.updateMany({
+        where: { productId: id },
+        data: uploadedVideo,
+      });
+    }
 
     return NextResponse.json(
       {
         success: true,
         product: updatedProduct,
         priceDetails: updatedPriceDetails,
+        uploadedVideo: updatedVidieo,
       },
       { status: 200 }
     );

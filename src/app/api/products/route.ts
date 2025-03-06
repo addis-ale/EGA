@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { NextApiRequest, NextApiResponse } from "next";
 import prisma from "@/lib/prismadb";
 import { productSchema } from "@/schemas/productSchema";
 import { ZodError } from "zod";
@@ -26,6 +25,7 @@ export async function POST(req: Request, res: Response) {
         minimumRentalPeriod,
         maximumRentalPeriod,
       },
+      uploadedVideo: { setUp, actionCard, gamePlay },
     } = validatedData;
 
     const newProduct = await prisma.product.create({
@@ -33,7 +33,7 @@ export async function POST(req: Request, res: Response) {
         productName,
         productDescription,
         uploadedCoverImage,
-        discountPercentage,
+        discountPercentage: discountPercentage ?? 0,
         ageRestriction,
         gameType,
         availableForSale: availableForSale ?? 0,
@@ -51,12 +51,20 @@ export async function POST(req: Request, res: Response) {
         maximumRentalPeriod,
       },
     });
-
+    const newVideoUpload = await prisma.videoUploaded.create({
+      data: {
+        productId: newProduct.id,
+        setUp,
+        actionCard,
+        gamePlay,
+      },
+    });
     return NextResponse.json(
       {
         success: true,
         product: newProduct,
         priceDetails: newPriceDetails,
+        uploadedVideo: newVideoUpload,
       },
       { status: 201 }
     );
@@ -67,10 +75,11 @@ export async function POST(req: Request, res: Response) {
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
+    const category = searchParams.get("category");
+    console.log(category);
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "3", 10);
     const skip = (page - 1) * limit;
-    const category = searchParams.get("category");
 
     let orderBy = {};
     let where = {};
@@ -78,27 +87,34 @@ export async function GET(req: Request) {
     switch (category) {
       case "trending":
         where = {
-          view: {
-            gt: 0, // Fetch products with more than 0 views
+          views: {
+            gt: 0,
           },
         };
         orderBy = {
-          view: "desc", // Sort by highest views
+          views: "desc", // Sort by highest views
         };
         break;
       default:
         // No category provided, fetch all products
         break;
     }
-
+    const totalProducts = await prisma.product.count({ where });
     const products = await prisma.product.findMany({
       where,
       orderBy,
+      include: {
+        priceDetails: true,
+        uploadedVideo: true,
+      },
       take: limit,
       skip,
     });
 
-    return NextResponse.json({ success: true, products });
+    return NextResponse.json(
+      { success: true, products, totalProducts },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error fetching products:", error);
     return NextResponse.json(
