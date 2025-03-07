@@ -5,13 +5,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Product } from "@prisma/client";
 import { useAddToCartMutation } from "@/state/features/cartApi";
 import { useToast } from "@/hooks/use-toast";
-
+import { useWishlist } from "@/hooks/useWishlist";
 interface ProductCardProps {
-  onRemove: (productId: string) => void;
   product: Product;
 }
 
-export function MiniFavoriteCard({ product, onRemove }: ProductCardProps) {
+export function MiniFavoriteCard({ product }: ProductCardProps) {
   const { toast } = useToast();
   const [addCartItem] = useAddToCartMutation();
   const handleAddTocart = () => {
@@ -35,11 +34,16 @@ export function MiniFavoriteCard({ product, onRemove }: ProductCardProps) {
         });
     }
   };
+  const { handleToggleWishlist } = useWishlist();
+
+  const handleDeleteWishlist = () => {
+    handleToggleWishlist(product);
+  };
   return (
     <Card className="group relative overflow-hidden border border-transparent bg-transparent h-[100px] transition-all duration-200 hover:border-gray-500">
       {/* Cancel button (Appears only on hover) */}
       <button
-        onClick={() => onRemove(product.id)}
+        onClick={handleDeleteWishlist}
         className="absolute right-2 top-2 z-10 flex h-5 w-5 items-center justify-center text-red-500 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
         aria-label="Remove from favorites"
       >
@@ -51,7 +55,7 @@ export function MiniFavoriteCard({ product, onRemove }: ProductCardProps) {
         <div className="relative h-[80px] w-[60px] flex-shrink-0 overflow-hidden rounded-md">
           <Image
             src={product.uploadedCoverImage || "/placeholder.svg"}
-            alt={product.productName}
+            alt={product.productName || "/placeholder.svg"}
             fill
             className="object-cover"
             sizes="(max-width: 768px) 60px, 60px"

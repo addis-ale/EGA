@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import Providers from "../Provider";
 import "../../app/globals.css";
+import { Toaster } from "@/components/ui/toaster";
 export default async function LocaleLayout({
   children,
   params,
@@ -30,6 +31,7 @@ export default async function LocaleLayout({
             {children}
           </NextIntlClientProvider>
         </Providers>
+        <Toaster />
       </body>
     </html>
   );

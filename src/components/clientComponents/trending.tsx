@@ -16,9 +16,8 @@ interface TrendingProps {
 const Trending = ({ trending, setPage, totalPages }: TrendingProps) => {
   const [page, setLocalPage] = useState(1);
 
-  // Handle page change
   const handlePageChange = (newPage: number) => {
-    if (page < totalPages && page > 0) {
+    if (newPage > 0 && newPage <= totalPages) {
       setLocalPage(newPage);
       setPage(newPage);
     }

@@ -32,8 +32,8 @@ export async function POST(req: Request) {
     }
 
     // Check if the product is already in the wishlist
-    const existingEntry = await prisma.wishlistOnProduct.findFirst({
-      where: { wishlistId: wishlist.id, productId },
+    const existingEntry = await prisma.wishlistOnProduct.findUnique({
+      where: { wishlistId_productId: { wishlistId: wishlist.id, productId } },
     });
 
     if (existingEntry) {
@@ -63,5 +63,37 @@ export async function POST(req: Request) {
         { status: error.message === "User not authenticated" ? 401 : 500 }
       );
     }
+  }
+}
+
+// 🟢 Get all wishlist items for the user
+export async function GET() {
+  try {
+    const userId = await getAuthenticatedUser();
+
+    const wishlist = await prisma.wishlist.findUnique({
+      where: { userId },
+      include: {
+        wishlists: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    if (!wishlist) {
+      return NextResponse.json({ wishlist: [] }, { status: 200 });
+    }
+
+    const products = wishlist.wishlists.map((entry) => entry.product);
+
+    return NextResponse.json({ wishlist: products }, { status: 200 });
+  } catch (error) {
+    console.error("Error fetching wishlist:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

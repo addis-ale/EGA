@@ -90,11 +90,11 @@ export default function ProductListingCard({
 
   return (
     <Card
-      className="w-full max-w-md overflow-hidden rounded-xl border shadow-md transition-all duration-300 group relative border-teal hover:border-green-500 hover:shadow-xl"
+      className="w-full overflow-hidden rounded-xl border shadow-md transition-all duration-300 group relative border-teal hover:border-green-500 hover:shadow-xl"
       onClick={handleCardClick}
     >
       {/* Image section with badges and buttons */}
-      <div className="relative h-64 w-full sm:h-72 overflow-hidden bg-gray-100">
+      <div className="relative h-48 w-full sm:h-56 md:h-64 lg:h-52 xl:h-56 overflow-hidden bg-gray-800">
         <Image
           src={product.uploadedCoverImage || "/imageAssets/artboard.png"}
           alt={`${product.productName} product image`}
@@ -144,9 +144,9 @@ export default function ProductListingCard({
         {/* Product name */}
         <div className="flex justify-between items-center">
           <h2
-            className={`text-2xl font-[400] tracking-wider text-white ${bungee.className}`}
+            className={`text-lg sm:text-xl md:text-2xl font-[400] tracking-wider text-white ${bungee.className}`}
           >
-            {truncateText(product.productName, 7)}
+            {truncateText(product.productName, 5)}
           </h2>
           <div className=" flex flex-col gap-2">
             {isNew && (
@@ -214,24 +214,26 @@ export default function ProductListingCard({
         </div>
 
         {/* Action buttons */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <Button
-            className="flex items-center justify-center gap-1 bg-shadGray/95 hover:bg-shadGray text-primary-foreground"
+            className="flex items-center justify-center gap-1 bg-shadGray/95 hover:bg-shadGray text-primary-foreground text-xs sm:text-sm"
             onClick={(e) =>
               handleActionClick(e, () => onAddToCart?.(product.id))
             }
           >
-            <ShoppingCart className="h-4 w-4 " />
-            <span>Add to cart</span>
+            <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 " />
+            <span className="hidden xs:inline">Add to cart</span>
+            <span className="xs:hidden">Cart</span>
           </Button>
 
           <Button
             variant="outline"
-            className="flex items-center justify-center gap-1 border-primary text-primary bg-teal hover:bg-teal/90"
+            className="flex items-center justify-center gap-1 border-primary text-primary bg-teal hover:bg-teal/90 text-xs sm:text-sm"
             onClick={(e) => handleActionClick(e, () => onRentNow?.(product.id))}
           >
-            <Calendar className="h-4 w-4 text-white" />
-            <span className="text-white">Rent Now</span>
+            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+            <span className="text-white hidden xs:inline">Rent Now</span>
+            <span className="text-white xs:hidden">Rent</span>
           </Button>
         </div>
       </div>

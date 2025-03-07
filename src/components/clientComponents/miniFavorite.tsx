@@ -3,19 +3,12 @@
 import { Heart } from "lucide-react";
 import { MiniFavoriteCard } from "../productCards/miniFavoriteCard";
 import { MiniFavoriteCardSkeleton } from "../productCards/miniFavoriteCardSkeleton";
-import { Product } from "@prisma/client";
+import { useGetWishlistQuery } from "@/state/features/whishlistApi";
 
-interface FavoritesListProps {
-  wishlist: Product[];
-  isLoading?: boolean;
-  onRemove: (productId: string) => void;
-}
+export function MiniFavorite() {
+  const { data: wishlistData, isLoading } = useGetWishlistQuery();
+  const wishlist = wishlistData?.wishlist;
 
-export function MiniFavorite({
-  wishlist,
-  isLoading = false,
-  onRemove,
-}: FavoritesListProps) {
   return (
     <div className="w-full max-w-md rounded-xl bg-oliveGreen p-4 flex flex-col justify-center">
       <div className="mb-4 flex items-center justify-center">
@@ -30,12 +23,8 @@ export function MiniFavorite({
               <MiniFavoriteCardSkeleton key={index} />
             ))
           : // Actual content
-            wishlist.map((product) => (
-              <MiniFavoriteCard
-                key={product.id}
-                product={product}
-                onRemove={onRemove}
-              />
+            wishlist?.map((product) => (
+              <MiniFavoriteCard key={product.id} product={product} />
             ))}
       </div>
     </div>
