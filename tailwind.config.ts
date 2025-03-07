@@ -14,6 +14,8 @@ export default {
       },
       colors: {
         shadGray: "#667085",
+        deepGray: "#2D2D2D",
+        lightGray: "#A0A0A0",
         oliveGreen: "#464E44BD",
         teal: "#289701",
         background: "hsl(var(--background))",

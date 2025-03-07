@@ -11,7 +11,7 @@ async function getAuthenticatedUser() {
   return user.id;
 }
 
-// 🟢 Add product to wishlist
+// 🟢 Toggle product in wishlist
 export async function POST(req: Request) {
   try {
     const userId = await getAuthenticatedUser();
@@ -37,106 +37,31 @@ export async function POST(req: Request) {
     });
 
     if (existingEntry) {
+      // If the product exists, remove it from the wishlist
+      await prisma.wishlistOnProduct.delete({
+        where: { id: existingEntry.id },
+      });
       return NextResponse.json(
-        { message: "Product already in wishlist" },
-        { status: 400 }
+        { message: "Product removed from wishlist" },
+        { status: 200 }
+      );
+    } else {
+      // If the product doesn't exist, add it to the wishlist
+      await prisma.wishlistOnProduct.create({
+        data: { wishlistId: wishlist.id, productId },
+      });
+      return NextResponse.json(
+        { message: "Product added to wishlist" },
+        { status: 201 }
       );
     }
-
-    // Add product to wishlist
-    await prisma.wishlistOnProduct.create({
-      data: { wishlistId: wishlist.id, productId },
-    });
-
-    return NextResponse.json(
-      { message: "Product added to wishlist" },
-      { status: 201 }
-    );
   } catch (error) {
-    console.error("Error adding to wishlist:", error);
-    if (error instanceof Error)
-      return NextResponse.json(
-        { error: error.message || "Internal Server Error" },
-        { status: error.message === "User not authenticated" ? 401 : 500 }
-      );
-  }
-}
-
-// 🟡 Get user's wishlist
-export async function GET() {
-  try {
-    const userId = await getAuthenticatedUser();
-
-    // Fetch wishlist and include related products
-    const wishlist = await prisma.wishlist.findUnique({
-      where: { userId },
-      include: {
-        wishlists: { include: { product: true } },
-      },
-    });
-
-    // Safely access the product data
-    const products = wishlist?.wishlists.map((item) => item.product) || [];
-
-    // Return the products array
-    return NextResponse.json({ wishlist: products }, { status: 200 });
-  } catch (error) {
-    console.error("Error fetching wishlist:", error);
-    // Handle different types of error responses
+    console.error("Error toggling wishlist:", error);
     if (error instanceof Error) {
       return NextResponse.json(
         { error: error.message || "Internal Server Error" },
         { status: error.message === "User not authenticated" ? 401 : 500 }
       );
     }
-    return NextResponse.json({ error: "Unknown error" }, { status: 500 });
-  }
-}
-
-// 🔴 Remove product from wishlist
-export async function DELETE(req: Request) {
-  try {
-    const userId = await getAuthenticatedUser();
-    const { productId } = await req.json();
-
-    if (!productId) {
-      return NextResponse.json(
-        { error: "Product ID is required" },
-        { status: 400 }
-      );
-    }
-
-    const wishlist = await prisma.wishlist.findUnique({ where: { userId } });
-
-    if (!wishlist) {
-      return NextResponse.json(
-        { error: "Wishlist not found" },
-        { status: 404 }
-      );
-    }
-
-    // Remove product from wishlist
-    const deleted = await prisma.wishlistOnProduct.deleteMany({
-      where: { wishlistId: wishlist.id, productId },
-    });
-
-    if (deleted.count === 0) {
-      return NextResponse.json(
-        { error: "Product not found in wishlist" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Product removed from wishlist" },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error("Error removing from wishlist:", error);
-    if (error instanceof Error)
-      return NextResponse.json(
-        { error: error.message || "Internal Server Error" },
-        { status: error.message === "User not authenticated" ? 401 : 500 }
-      );
   }
 }

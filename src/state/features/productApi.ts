@@ -1,16 +1,23 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { Product } from "@prisma/client";
+import { PriceDetails, Product, Review, VideoUploaded } from "@prisma/client";
 
 interface ProductResponse {
-  products: Product[];
-  total: number;
-  page: number;
-  limit: number;
+  success: boolean;
+  products: (Product & {
+    price: PriceDetails;
+    videoUploaded: VideoUploaded;
+    reviews: Review[];
+  })[];
+  totalProducts: number;
 }
-
+interface GameProduct extends Product {
+  priceDetails: PriceDetails;
+  uploadedVideo: VideoUploaded[];
+  reviews: Review[];
+}
 export const productApi = createApi({
   reducerPath: "productApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "/api" }), // Adjust based on your setup
+  baseQuery: fetchBaseQuery({ baseUrl: "/api" }),
   endpoints: (builder) => ({
     getAllProducts: builder.query<
       ProductResponse,
@@ -26,12 +33,23 @@ export const productApi = createApi({
         return `/products?${params.toString()}`;
       },
     }),
-    getProductById: builder.query<Product, string>({
+    getProductById: builder.query<{ product: GameProduct }, string>({
       query: (id) => `/products/${id}`,
     }),
     createProduct: builder.mutation<
-      { message: string; product: Product },
-      Partial<Product>
+      {
+        message: string;
+        product: Product & {
+          price: PriceDetails;
+          videoUploaded: VideoUploaded;
+        };
+      },
+      Partial<
+        Product & {
+          price: PriceDetails;
+          videoUploaded: VideoUploaded;
+        }
+      >
     >({
       query: (product) => ({
         url: "/products",
@@ -48,8 +66,19 @@ export const productApi = createApi({
     }),
     //update product
     updateProduct: builder.mutation<
-      Product,
-      { id: string; product: Partial<Product> }
+      Product & {
+        price: PriceDetails;
+        videoUploaded: VideoUploaded;
+      },
+      {
+        id: string;
+        product: Partial<
+          Product & {
+            price: PriceDetails;
+            videoUploaded: VideoUploaded;
+          }
+        >;
+      }
     >({
       query: ({ id, product }) => ({
         url: `/products/${id}`,

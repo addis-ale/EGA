@@ -76,7 +76,6 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const category = searchParams.get("category");
-    console.log(category);
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "3", 10);
     const skip = (page - 1) * limit;
@@ -106,6 +105,7 @@ export async function GET(req: Request) {
       include: {
         priceDetails: true,
         uploadedVideo: true,
+        reviews: true,
       },
       take: limit,
       skip,

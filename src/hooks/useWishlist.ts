@@ -1,24 +1,33 @@
-import {
-  useAddToWishlistMutation,
-  useGetWishlistQuery,
-} from "@/state/features/whishlistApi";
 import { useCallback } from "react";
 import { useToast } from "./use-toast";
+
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { Product } from "@prisma/client";
+import {
+  useGetWishlistQuery,
+  useToggleWishlistMutation,
+} from "@/state/features/whishlistApi";
 
 export const useWishlist = () => {
   const { toast } = useToast();
-  const [addToWishlist] = useAddToWishlistMutation();
-  const { refetch } = useGetWishlistQuery();
-  const handleAddToWishlist = useCallback(
+  const [toggleWishlist] = useToggleWishlistMutation();
+  const { refetch, data } = useGetWishlistQuery();
+
+  const handleToggleWishlist = useCallback(
     async (product: Product) => {
+      const isInWishlist = data?.wishlist?.some(
+        (item) => item.id === product.id
+      );
+
       try {
-        await addToWishlist({ productId: product.id }).unwrap();
-        refetch();
+        await toggleWishlist({ productId: product.id }).unwrap();
+        refetch(); // Refresh wishlist
+
         toast({
-          title: "Success",
-          description: "Product added to wishlist",
+          title: isInWishlist ? "Removed from Wishlist" : "Added to Wishlist",
+          description: isInWishlist
+            ? "Product has been removed from your wishlist."
+            : "Product added to your wishlist successfully!",
         });
       } catch (error) {
         if ("status" in (error as FetchBaseQueryError)) {
@@ -26,34 +35,32 @@ export const useWishlist = () => {
           switch (err.status) {
             case 401:
               toast({
-                title: "Sign in first",
-                description:
-                  "You need to be logged in to add items to your wishlist.",
+                title: "Sign in required",
+                description: "Please log in to manage your wishlist.",
               });
               break;
             case 400:
               toast({
-                title: "Already in Wishlist",
-                description: "This product is already in your wishlist.",
+                title: "Wishlist Error",
+                description: "Something went wrong. Try again!",
               });
               break;
             default:
               toast({
-                title: "Error",
-                description:
-                  "An error occurred while adding to wishlist. Please try again.",
+                title: "Server Error",
+                description: "Unable to update wishlist. Please try later.",
               });
           }
         } else {
           toast({
             title: "Network Error",
-            description: "Please check your internet connection and try again.",
+            description: "Check your internet connection and try again.",
           });
         }
       }
     },
-    [addToWishlist, toast, refetch]
+    [toggleWishlist, toast, refetch, data]
   );
 
-  return { handleAddToWishlist };
+  return { handleToggleWishlist };
 };

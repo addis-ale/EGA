@@ -16,22 +16,27 @@ export async function GET(
       );
     }
 
-    const product = await prisma.product.findUnique({
-      where: { id },
-      include: {
-        priceDetails: true,
-        uploadedVideo: true,
-      },
-    });
+    // Use a transaction to fetch and update in one operation
+    const [updatedProduct] = await prisma.$transaction([
+      prisma.product.update({
+        where: { id },
+        data: { views: { increment: 1 } }, // Increment views safely
+        include: {
+          priceDetails: true,
+          uploadedVideo: true,
+          reviews: true,
+        },
+      }),
+    ]);
 
-    if (!product) {
+    if (!updatedProduct) {
       return NextResponse.json(
         { success: false, message: "Product not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ success: true, product }, { status: 200 });
+    return NextResponse.json({ product: updatedProduct }, { status: 200 });
   } catch (error) {
     console.error("API Error:", error);
     return NextResponse.json(

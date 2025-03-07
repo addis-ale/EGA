@@ -1,36 +1,14 @@
 import { useState } from "react";
 import TrendingCard from "../productCards/trendingCard";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { PriceDetails, Product, Review, VideoUploaded } from "@prisma/client";
 
-interface PriceDetails {
-  salePrice: number;
-  rentalPricePerHour: number | null;
-  minimumRentalPeriod: number | null;
-  maximumRentalPeriod: number | null;
-}
-
-interface Product {
-  productName: string;
-  gameType:
-    | "TABLE_TOP"
-    | "BOARD_GAME"
-    | "VIDEO_GAME"
-    | "CARD_GAME"
-    | "ROLE_PLAYING";
-  price: number;
-  discountPercentage: number;
-  ageRestriction: number;
-  availableProduct: number;
-  productDescription: string;
-  availableForSale: boolean;
-  availableForRent: boolean;
-  productType: "SALE" | "RENT" | "BOTH";
-  priceDetails: PriceDetails;
-  createdAt: string;
-  updatedAt: string;
-}
 interface TrendingProps {
-  trending: Product[];
+  trending: (Product & {
+    priceDetails: PriceDetails;
+    videoUploaded: VideoUploaded;
+    reviews: Review[];
+  })[];
   setPage: (page: number) => void;
   totalPages: number;
 }
@@ -40,8 +18,10 @@ const Trending = ({ trending, setPage, totalPages }: TrendingProps) => {
 
   // Handle page change
   const handlePageChange = (newPage: number) => {
-    setLocalPage(newPage);
-    setPage(newPage);
+    if (page < totalPages && page > 0) {
+      setLocalPage(newPage);
+      setPage(newPage);
+    }
   };
 
   return (
@@ -75,9 +55,7 @@ const Trending = ({ trending, setPage, totalPages }: TrendingProps) => {
         }`}
       >
         {trending.length &&
-          trending.map((item) => (
-            <TrendingCard key={item.productName} product={item} />
-          ))}
+          trending.map((item) => <TrendingCard key={item.id} product={item} />)}
       </div>
     </div>
   );
