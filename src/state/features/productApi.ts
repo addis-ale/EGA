@@ -21,14 +21,21 @@ export const productApi = createApi({
   endpoints: (builder) => ({
     getAllProducts: builder.query<
       ProductResponse,
-      { category?: string; search?: string; page?: number; limit?: number }
+      {
+        category?: string;
+        search?: string;
+        page?: number;
+        limit?: number;
+        gameTypeFilter?: string;
+      }
     >({
-      query: ({ category, search, page = 1, limit = 10 }) => {
+      query: ({ category, search, gameTypeFilter, page, limit }) => {
         const params = new URLSearchParams();
         if (category) params.append("category", category);
         if (search) params.append("search", search);
-        params.append("page", page.toString());
-        params.append("limit", limit.toString());
+        if (gameTypeFilter) params.append("gameTypeFilter", gameTypeFilter);
+        if (page) params.append("page", page.toString());
+        if (limit) params.append("limit", limit.toString());
 
         return `/products?${params.toString()}`;
       },

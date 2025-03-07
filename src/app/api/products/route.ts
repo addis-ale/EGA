@@ -1,103 +1,160 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import prisma from "@/lib/prismadb";
-import { productSchema } from "@/schemas/productSchema";
-import { ZodError } from "zod";
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
+import { getCurrentUser } from "@/actions/getCurrentUser";
 
-export async function POST(req: Request, res: Response) {
-  try {
-    const body = await req.json();
-    const validatedData = productSchema.parse(body);
-    const {
-      productName,
-      productDescription,
-      uploadedCoverImage,
-      discountPercentage,
-      ageRestriction,
-      gameType,
-      availableForSale,
-      availableForRent,
-      productType,
-      pricing: {
-        salePrice,
-        rentalPricePerHour,
-        minimumRentalPeriod,
-        maximumRentalPeriod,
-      },
-      uploadedVideo: { setUp, actionCard, gamePlay },
-    } = validatedData;
+type SortOrder = "asc" | "desc";
 
-    const newProduct = await prisma.product.create({
-      data: {
-        productName,
-        productDescription,
-        uploadedCoverImage,
-        discountPercentage: discountPercentage ?? 0,
-        ageRestriction,
-        gameType,
-        availableForSale: availableForSale ?? 0,
-        availableForRent: availableForRent ?? 0,
-        productType,
-      },
-    });
-
-    const newPriceDetails = await prisma.priceDetails.create({
-      data: {
-        productId: newProduct.id,
-        salePrice,
-        rentalPricePerHour,
-        minimumRentalPeriod,
-        maximumRentalPeriod,
-      },
-    });
-    const newVideoUpload = await prisma.videoUploaded.create({
-      data: {
-        productId: newProduct.id,
-        setUp,
-        actionCard,
-        gamePlay,
-      },
-    });
-    return NextResponse.json(
-      {
-        success: true,
-        product: newProduct,
-        priceDetails: newPriceDetails,
-        uploadedVideo: newVideoUpload,
-      },
-      { status: 201 }
-    );
-  } catch (error) {
-    return handleError(error, res);
-  }
-}
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const category = searchParams.get("category");
+    const category = searchParams.get("category"); // Category filter
+    const gameTypeFilter = searchParams.get("gameTypeFilter"); // Game type filter
     const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "3", 10);
+    const limit = parseInt(searchParams.get("limit") || "12", 10);
     const skip = (page - 1) * limit;
 
-    let orderBy = {};
-    let where = {};
+    const user = await getCurrentUser();
+    let where: {
+      gameType?: string;
+      OR?: { productName?: { in: string[] }; gameType?: { in: string[] } }[];
+      views?: { gt: number };
+    } = {};
+    const orderBy: { [key: string]: SortOrder } = {};
 
-    switch (category) {
-      case "trending":
-        where = {
-          views: {
-            gt: 0,
-          },
-        };
-        orderBy = {
-          views: "desc", // Sort by highest views
-        };
-        break;
-      default:
-        // No category provided, fetch all products
-        break;
+    // 1️⃣ If no category is provided, fetch all products without pagination
+    if (!category || gameTypeFilter === "ALL") {
+      if (gameTypeFilter && gameTypeFilter !== "ALL") {
+        where.gameType = gameTypeFilter;
+      }
+
+      const totalProducts = await prisma.product.count({ where });
+      const products = await prisma.product.findMany({
+        where,
+        orderBy,
+        include: {
+          priceDetails: true,
+          uploadedVideo: true,
+          reviews: true,
+        },
+      });
+
+      return NextResponse.json(
+        { success: true, products, totalProducts },
+        { status: 200 }
+      );
     }
+
+    // 2️⃣ Handle category filtering
+    if (category === "recommended") {
+      if (!user) {
+        return NextResponse.json(
+          { success: true, products: [], totalProducts: 0 },
+          { status: 200 }
+        );
+      }
+
+      const searchHistory = await prisma.searchHistory.findMany({
+        where: { userId: user.id },
+        select: { query: true },
+      });
+
+      if (searchHistory.length > 0) {
+        const searchKeywords = searchHistory
+          .map((entry) => entry.query)
+          .filter(Boolean);
+        if (searchKeywords.length > 0) {
+          where = {
+            OR: [
+              { productName: { in: searchKeywords } },
+              { gameType: { in: searchKeywords } },
+            ],
+          };
+        } else {
+          return NextResponse.json(
+            { success: true, products: [], totalProducts: 0 },
+            { status: 200 }
+          );
+        }
+      } else {
+        return NextResponse.json(
+          { success: true, products: [], totalProducts: 0 },
+          { status: 200 }
+        );
+      }
+    } else if (category === "trending") {
+      where.views = { gt: 0 };
+      orderBy.views = "desc";
+    } else if (category === "top-rated") {
+      // Fetch products with their reviews
+      const products = await prisma.product.findMany({
+        include: {
+          priceDetails: true,
+          uploadedVideo: true,
+          reviews: { select: { rating: true } },
+        },
+      });
+
+      // Calculate average ratings manually
+      const topRatedProducts = products
+        .map((product) => {
+          const totalStars = product.reviews.reduce(
+            (sum, review) => sum + review.rating,
+            0
+          );
+          const averageRating =
+            product.reviews.length > 0
+              ? totalStars / product.reviews.length
+              : 0;
+          return { ...product, averageRating };
+        })
+        .sort((a, b) => b.averageRating - a.averageRating) // Sort by highest rating
+        .slice(0, 10); // Get top 10
+
+      return NextResponse.json(
+        {
+          success: true,
+          products: topRatedProducts,
+          totalProducts: topRatedProducts.length,
+        },
+        { status: 200 }
+      );
+    } else if (category === "deal-of-the-week") {
+      // Fetch products with discount percentages
+      const dealProducts = await prisma.product.findMany({
+        include: {
+          priceDetails: {
+            select: { salePrice: true, rentalPricePerHour: true },
+          },
+          uploadedVideo: true,
+          reviews: true,
+        },
+      });
+
+      // Calculate discount percentage manually
+      const discountedProducts = dealProducts
+        .map((product) => {
+          const discount = product.discountPercentage;
+          return { ...product, discountPercentage: discount };
+        })
+        .sort((a, b) => b.discountPercentage - a.discountPercentage) // Sort by highest discount
+        .slice(0, 6); // Get top 6
+
+      return NextResponse.json(
+        {
+          success: true,
+          products: discountedProducts,
+          totalProducts: discountedProducts.length,
+        },
+        { status: 200 }
+      );
+    } else {
+      return NextResponse.json(
+        { success: true, products: [], totalProducts: 0 },
+        { status: 200 }
+      );
+    }
+
+    // 3️⃣ Apply pagination only for categories that require it
     const totalProducts = await prisma.product.count({ where });
     const products = await prisma.product.findMany({
       where,
@@ -118,30 +175,8 @@ export async function GET(req: Request) {
   } catch (error) {
     console.error("Error fetching products:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to fetch products" },
+      { success: false, error: String(error) },
       { status: 500 }
     );
   }
-}
-function handleError(error: unknown, res: Response) {
-  console.error("API Error:", error);
-
-  if (error instanceof ZodError) {
-    return NextResponse.json(
-      { success: false, errors: error.errors },
-      { status: 400 }
-    );
-  }
-
-  if (error instanceof Error) {
-    return NextResponse.json(
-      { success: false, message: "Record not found" },
-      { status: 403 }
-    );
-  }
-
-  return NextResponse.json(
-    { success: false, message: "Server Error" },
-    { status: 500 }
-  );
 }

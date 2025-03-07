@@ -9,7 +9,6 @@ const productSchema = z.object({
     .min(2, "Product name must contain at least 3 characters")
     .max(50, "Product name can't be longer than 50 characters")
     .default(""),
-
   productDescription: z
     .string()
     .min(50, "Product description must contain at least 50 characters")

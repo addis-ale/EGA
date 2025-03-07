@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useGetAllProductsQuery } from "@/state/features/productApi";
 import TrendingSkeleton from "@/components/productCards/trendingCardSkeleton";
 import Recommended from "@/components/clientComponents/recommended";
+import SubCategory from "./subCatagorySection";
 
 const LIMIT_3 = 3; // Limit for the first set of trending products
 const LIMIT_12 = 12; // Limit for the recommended products
@@ -24,6 +25,7 @@ const ProductList = () => {
   // Fetch recommended category products with limit 12 and page
   const { data: recommended, isLoading: isRecommendedLoading } =
     useGetAllProductsQuery({
+      category: "recommended",
       limit: LIMIT_12,
       page,
     });
@@ -40,6 +42,7 @@ const ProductList = () => {
     videoUploaded: product.videoUploaded || {},
     reviews: product.reviews || [],
   }));
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recommendedProducts = recommended?.products.map((product: any) => ({
     ...product,
@@ -68,9 +71,13 @@ const ProductList = () => {
                 totalPages={totalPages}
               />
             )}
-            {recommendedProducts && (
+
+            {/* Render Recommended section only if there are recommended products */}
+            {recommendedProducts && recommendedProducts.length > 0 && (
               <Recommended recommended={recommendedProducts} />
             )}
+
+            <SubCategory />
           </>
         )}
       </div>
