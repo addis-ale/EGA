@@ -8,7 +8,7 @@ import {
 import { useToast } from "./use-toast";
 
 export const useWishlist = () => {
-  const { toast } = useToast(); // Ensure this is correctly set up
+  const { toast } = useToast();
   const [toggleWishlist] = useToggleWishlistMutation();
   const { refetch, data } = useGetWishlistQuery();
 

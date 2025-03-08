@@ -178,7 +178,7 @@ export async function GET(req: Request) {
           return { ...product, averageRating };
         })
         .sort((a, b) => b.averageRating - a.averageRating) // Sort by highest rating
-        .slice(0, 10); // Get top 10
+        .slice(0, 3);
 
       return NextResponse.json(
         {
@@ -207,7 +207,7 @@ export async function GET(req: Request) {
           return { ...product, discountPercentage: discount };
         })
         .sort((a, b) => b.discountPercentage - a.discountPercentage) // Sort by highest discount
-        .slice(0, 6); // Get top 6
+        .slice(0, 9); // Get top 9
 
       return NextResponse.json(
         {

@@ -87,3 +87,37 @@ export const productSchema = z
       path: ["pricing"],
     }
   );
+
+export const cartSchema = z
+  .object({
+    productId: z.string().min(1, "Product ID is required"),
+    type: z.enum(["SALE", "RENT"], { message: "Invalid product type" }),
+    quantity: z.number().int().positive("Quantity must be a positive integer"),
+    rentalStart: z.preprocess(
+      (val) => (val && typeof val === "string" ? new Date(val) : val),
+      z.date().optional()
+    ),
+    rentalEnd: z.preprocess(
+      (val) => (val && typeof val === "string" ? new Date(val) : val),
+      z.date().optional()
+    ),
+  })
+  .refine(
+    (data) => {
+      if (data.type === "RENT") {
+        return (
+          data.rentalStart instanceof Date &&
+          data.rentalEnd instanceof Date &&
+          data.quantity > 0
+        );
+      }
+      return true;
+    },
+    {
+      message:
+        "Rental start and end dates are required for rentals, and quantity must be greater than zero",
+      path: ["rentalStart", "rentalEnd", "quantity"],
+    }
+  );
+
+export default cartSchema;

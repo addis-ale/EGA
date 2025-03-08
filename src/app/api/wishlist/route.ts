@@ -3,7 +3,7 @@ import prisma from "@/lib/prismadb";
 import { getCurrentUser } from "@/actions/getCurrentUser";
 
 // Utility function to get user ID
-async function getAuthenticatedUser() {
+export async function getAuthenticatedUser() {
   const user = await getCurrentUser();
   if (!user?.id) {
     throw new Error("User not authenticated");

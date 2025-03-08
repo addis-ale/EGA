@@ -157,7 +157,6 @@ model Rental {
   rentalStart DateTime
   rentalEnd   DateTime
   status      String   @default("Active") // "Active", "Returned", "Overdue"
-
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }

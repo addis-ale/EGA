@@ -2,7 +2,7 @@
 
 import type React from "react";
 import Image from "next/image";
-import { ShoppingCart, Heart, Calendar, Star } from "lucide-react";
+import { ShoppingCart, Heart, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,8 @@ import { useRouter } from "next/navigation";
 import { formatPrice, truncateText } from "@/utils/helper";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useGetWishlistQuery } from "@/state/features/whishlistApi";
+import DateRangeDialog from "../clientComponents/dateInput";
+import { useCart } from "@/hooks/useCart";
 
 const bungee = Bungee({
   subsets: ["latin"],
@@ -29,16 +31,10 @@ interface ProductListingCardProps {
     priceDetails: PriceDetails;
     reviews: Review[];
   };
-  onAddToCart?: (productId: string) => void;
-  onRentNow?: (productId: string) => void;
-  onAddToWishlist?: (productId: string) => void;
-  onQuickView?: (productId: string) => void;
 }
 
 export default function ProductListingCard({
   product,
-  onAddToCart,
-  onRentNow,
 }: ProductListingCardProps) {
   const { handleToggleWishlist } = useWishlist();
   const { data: wishlistData } = useGetWishlistQuery();
@@ -67,13 +63,10 @@ export default function ProductListingCard({
   const priceDetails = product?.priceDetails;
   const salePrice = priceDetails?.salePrice ?? 0;
   const rentalPricePerHour = priceDetails?.rentalPricePerHour ?? 0;
-  // const originalPrice =
-  //   salePrice > 0 && product.discountPercentage > 0
-  //     ? salePrice / (1 - product.discountPercentage / 100)
-  //     : salePrice;
-  const isOnSale = salePrice > 0;
-  const isRent = rentalPricePerHour > 0;
-  const rentandsale = isOnSale && isRent;
+
+  const isOnSale = product.productType === "SALE";
+  const isRent = product.productType === "RENT";
+  const rentandsale = product.productType === "BOTH";
 
   const handleCardClick = () => {
     const currentLocation = window.location.pathname
@@ -82,10 +75,10 @@ export default function ProductListingCard({
       .join("");
     router.push(`${currentLocation}/product/${product.id}`);
   };
-
-  const handleActionClick = (e: React.MouseEvent, action: () => void) => {
+  const { handleAddToCart } = useCart();
+  const handleSaveToBuy = (e: React.MouseEvent) => {
     e.stopPropagation();
-    action();
+    handleAddToCart(product, "SALE", 1);
   };
 
   return (
@@ -152,11 +145,13 @@ export default function ProductListingCard({
             {isNew && (
               <Badge className="bg-blue-500 hover:bg-blue-600">New</Badge>
             )}
-            {rentandsale ? (
+            {rentandsale && (
               <Badge className="bg-red-500 hover:bg-red-600">Sale & Rent</Badge>
-            ) : isOnSale ? (
+            )}
+            {isOnSale && (
               <Badge className="bg-red-500 hover:bg-red-600">Sale</Badge>
-            ) : (
+            )}
+            {isRent && (
               <Badge className="bg-red-500 hover:bg-red-600">Rent</Badge>
             )}
           </div>
@@ -217,24 +212,14 @@ export default function ProductListingCard({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <Button
             className="flex items-center justify-center gap-1 bg-shadGray/95 hover:bg-shadGray text-primary-foreground text-xs sm:text-sm"
-            onClick={(e) =>
-              handleActionClick(e, () => onAddToCart?.(product.id))
-            }
+            onClick={handleSaveToBuy}
           >
             <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 " />
-            <span className="hidden xs:inline">Add to cart</span>
-            <span className="xs:hidden">Cart</span>
+            <span className="hidden xs:inline">Save to buy</span>
+            <span className="xs:hidden">Save to buy</span>
           </Button>
 
-          <Button
-            variant="outline"
-            className="flex items-center justify-center gap-1 border-primary text-primary bg-teal hover:bg-teal/90 text-xs sm:text-sm"
-            onClick={(e) => handleActionClick(e, () => onRentNow?.(product.id))}
-          >
-            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
-            <span className="text-white hidden xs:inline">Rent Now</span>
-            <span className="text-white xs:hidden">Rent</span>
-          </Button>
+          <DateRangeDialog product={product} />
         </div>
       </div>
     </Card>

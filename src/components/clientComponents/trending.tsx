@@ -6,7 +6,7 @@ import { PriceDetails, Product, Review, VideoUploaded } from "@prisma/client";
 interface TrendingProps {
   trending: (Product & {
     priceDetails: PriceDetails;
-    videoUploaded: VideoUploaded;
+    videoUploaded: VideoUploaded[];
     reviews: Review[];
   })[];
   setPage: (page: number) => void;

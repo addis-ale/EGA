@@ -1,155 +1,208 @@
-import { z } from "zod";
-import prisma from "@/lib/prismadb";
+import cartSchema from "@/schemas/productSchema";
+import { getAuthenticatedUser } from "../wishlist/route";
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/actions/getCurrentUser";
-// import { getToken } from "next-auth/jwt";
+import { ZodError } from "zod";
+import prisma from "@/lib/prismadb";
 
-const cartitemschema = z.object({
-  id: z.string(),
-  price: z.number(),
-  datedAt: z.string(),
-  salesType: z.enum(["sale", "Rent", "Both"]),
-  quantity: z.number().int().min(1, "at least 1 item required"),
-  imageUruploadedCoverImagel: z.string().url(),
-});
-const cartSchema = z.object({
-  // userId: z.string().min(1, "user id required"),
-  items: z.array(cartitemschema).optional(),
-  totalPrice: z.number().min(1, "price should be postive number"),
-
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional(),
-});
-async function getAuthenticatedUser() {
-  const user = await getCurrentUser();
-  if (!user?.id) {
-    throw new Error("User not authenticated");
-  }
-  return user.id;
-}
 export async function POST(req: Request) {
   try {
     const userId = await getAuthenticatedUser();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
-    console.log(body);
-    const validation = cartSchema.safeParse({
-      ...body,
-      totalPrice: Number(body.totalPrice),
+    const validatedData = cartSchema.parse(body);
+    const { productId, type, quantity, rentalStart, rentalEnd } = validatedData;
+    console.log("Validated Data:", validatedData);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      items: body.items?.map((item: any) => ({
-        ...item,
-        price: Number(item.price),
-        quantity: Number(item.quantity),
-      })),
+    let cart = await prisma.cart.findUnique({
+      where: { userId },
+      include: { cartItems: true },
     });
 
-    if (!validation.success) {
-      return NextResponse.json({
-        message: "Inavlid Input",
-        status: 422,
+    if (!cart) {
+      console.log("Cart not found, creating a new one...");
+      cart = await prisma.cart.create({
+        data: { userId, cartItems: { create: [] } },
+        include: { cartItems: true },
       });
     }
-    const { items, totalPrice } = validation.data;
-    await prisma.$connect();
 
-    const isUser = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-    if (!isUser) {
-      return NextResponse.json({
-        error: "user not found",
-      });
-    }
-    const isUserhavecart = await prisma.cart.findUnique({
-      where: { userId: userId },
-      include: {
-        items: true,
-      },
-    });
-    if (isUserhavecart) {
-      for (const item of items || []) {
-        const isItem = await prisma.cartItem.findFirst({
-          where: {
-            productId: item.id,
-            cartId: isUserhavecart.id,
-          },
-        });
-
-        if (isItem) {
-          return NextResponse.json({
-            msg: "Item already exists in the cart",
-            status: 400,
-          });
-        }
+    if (type === "SALE") {
+      if (!quantity || quantity <= 0) {
+        return NextResponse.json(
+          { error: "Invalid quantity for sale item" },
+          { status: 400 }
+        );
       }
 
-      if (items && items.length > 0) {
-        const newUserItem = await prisma.cartItem.createMany({
-          data: items?.map((item) => ({
-            salesType: item.salesType,
-            RentedAt: item.salesType === "Rent" ? new Date() : null,
-            datedAt: item.salesType === "Rent" ? new Date(item.datedAt) : null,
-            productId: item.id,
-            cartId: isUserhavecart.id,
-            price: item.price,
-            quantity: item.quantity,
-            imageUruploadedCoverImagel: item.imageUruploadedCoverImagel,
-          })),
-        });
-        const totalPrice = items.reduce(
-          (acc, item) => acc + item.price * item.quantity,
-          0
-        );
-        await prisma.cart.update({
-          where: { id: isUserhavecart.id },
-          data: {
-            totalPrice: totalPrice + isUserhavecart.totalPrice,
-          },
-        });
-        return NextResponse.json({
-          msg: "item added!",
-          status: 201,
-          newUserItem,
+      let existingCartItem = cart.cartItems.find(
+        (item) => item.productId === productId && item.type === "SALE"
+      );
+
+      if (existingCartItem) {
+        console.log("Product found in cart (SALE), updating quantity...");
+        existingCartItem = await prisma.cartOnProduct.update({
+          where: { id: existingCartItem.id },
+          data: { quantity: (existingCartItem.quantity ?? 0) + quantity },
         });
       } else {
-        return NextResponse.json("item need to add to cart");
+        console.log("Product not in cart (SALE), adding new item...");
+        existingCartItem = await prisma.cartOnProduct.create({
+          data: {
+            cartId: cart.id,
+            productId,
+            quantity,
+            type: "SALE",
+          },
+        });
       }
-    } else {
-      const cart = await prisma.cart.create({
-        data: {
-          userId,
-          totalPrice,
-          items: {
-            create: items?.map((cartitem) => ({
-              productId: cartitem.id,
-              salesType: cartitem.salesType,
-              RentedAt: cartitem.salesType === "Rent" ? new Date() : null,
-              datedAt:
-                cartitem.salesType === "Rent"
-                  ? new Date(cartitem.datedAt)
-                  : null,
 
-              price: cartitem.price,
-              quantity: cartitem.quantity,
-              imageUruploadedCoverImagel: cartitem.imageUruploadedCoverImagel,
-            })),
+      return NextResponse.json(
+        { success: true, message: "Cart updated", cartItem: existingCartItem },
+        { status: 201 }
+      );
+    }
+
+    if (type === "RENT") {
+      if (!rentalStart || !rentalEnd) {
+        return NextResponse.json(
+          { error: "Rental start and end dates are required" },
+          { status: 400 }
+        );
+      }
+
+      const rentalStartDate = new Date(rentalStart);
+      const rentalEndDate = new Date(rentalEnd);
+
+      let existingRental = cart.cartItems.find(
+        (item) =>
+          item.productId === productId &&
+          item.type === "RENT" &&
+          item.rentalStart?.toISOString() === rentalStartDate.toISOString() &&
+          item.rentalEnd?.toISOString() === rentalEndDate.toISOString()
+      );
+
+      if (existingRental) {
+        console.log(
+          "Product found in cart (RENT) for the same period, updating quantity..."
+        );
+        existingRental = await prisma.cartOnProduct.update({
+          where: { id: existingRental.id },
+          data: { quantity: (existingRental.quantity ?? 0) + quantity },
+        });
+      } else {
+        console.log("Adding new rental item...");
+        existingRental = await prisma.cartOnProduct.create({
+          data: {
+            cartId: cart.id,
+            productId,
+            rentalStart: rentalStartDate,
+            rentalEnd: rentalEndDate,
+            type: "RENT",
+            quantity,
+          },
+        });
+      }
+
+      return NextResponse.json(
+        { success: true, message: "Cart updated", cartItem: existingRental },
+        { status: 201 }
+      );
+    }
+
+    return NextResponse.json({ error: "Invalid item type" }, { status: 400 });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { error: "Validation failed", details: error.errors },
+        { status: 422 }
+      );
+    }
+    const errorMessage =
+      error instanceof Error ? error.message : "An unknown error occurred";
+    console.error("Error processing cart request:", errorMessage);
+    return NextResponse.json(
+      { error: "Internal Server Error", message: errorMessage },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET() {
+  try {
+    const userId = await getAuthenticatedUser();
+    if (!userId)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const cart = await prisma.cart.findUnique({
+      where: { userId },
+      include: {
+        cartItems: {
+          include: {
+            product: { include: { priceDetails: true, reviews: true } },
           },
         },
-      });
-
-      return NextResponse.json({
-        message: "cart created succesfully",
-        status: 200,
-        data: cart,
-      });
-    }
-  } catch (error) {
-    return NextResponse.json({
-      detail: error,
-      status: 500,
+      },
     });
-  } finally {
-    await prisma.$disconnect();
+    return NextResponse.json({ cart }, { status: 200 });
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "An unknown error occurred";
+    return NextResponse.json(
+      { error: "Internal Server Error", message: errorMessage },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const userId = await getAuthenticatedUser();
+    if (!userId)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { cartItemId } = await req.json();
+    await prisma.cartOnProduct.delete({ where: { id: cartItemId } });
+
+    return NextResponse.json(
+      { success: true, message: "Item removed from cart" },
+      { status: 200 }
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Internal Server Error", message: (error as Error).message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const userId = await getAuthenticatedUser();
+    if (!userId)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { cartItemId, quantity, rentalStart, rentalEnd } = await req.json();
+
+    const updatedCartItem = await prisma.cartOnProduct.update({
+      where: { id: cartItemId },
+      data: {
+        quantity,
+        rentalStart: rentalStart ? new Date(rentalStart) : undefined,
+        rentalEnd: rentalEnd ? new Date(rentalEnd) : undefined,
+      },
+    });
+
+    return NextResponse.json(
+      { success: true, message: "Cart updated", cartItem: updatedCartItem },
+      { status: 200 }
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Internal Server Error", message: (error as Error).message },
+      { status: 500 }
+    );
   }
 }

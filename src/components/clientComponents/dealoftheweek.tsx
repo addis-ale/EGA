@@ -54,7 +54,7 @@ export default function ProductCarousel({
     <div className="w-full  text-white py-6">
       {/* Title at the top */}
       <div className="text-start mb-6">
-        <h1 className="text-2xl md:text-4xl font-bold tracking-tight">
+        <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-white">
           Deal Of The Week
         </h1>
       </div>
