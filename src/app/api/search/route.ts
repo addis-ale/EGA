@@ -1,22 +1,44 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prismadb";
 import { z, ZodError } from "zod";
+import { getCurrentUser } from "@/actions/getCurrentUser";
 
 const searchSchama = z.object({
   priceRange: z.string().optional(),
   publishedAt: z.enum(["Today", "Last week", "Last month"]).optional(),
   age: z.string().optional(),
   alphabet: z.string().optional(),
-  type: z.enum(["TABLE_TOP", "PHYSICAL"]).optional(),
-  limit: z.string(),
+  type: z.string().min(1, "need type").optional(),
+  limit: z.number(),
+  page: z.number(),
 });
-
+async function getAuth() {
+  const userId = await getCurrentUser();
+  if (!userId?.id) {
+    return null;
+  }
+  return userId.id;
+}
 export async function GET(req: Request) {
   try {
-    const userId = "user123";
+    const userId = await getAuth();
+    // const userId = "67c97c4ca3134a2afdd4139a";
     const url = new URL(req.url);
-    const { priceRange, publishedAt, age, alphabet, searchQuery, type, limit } =
-      Object.fromEntries(url.searchParams);
+    // "price" | "published" | "alphabet" | "age" | "other"
+    const {
+      price: priceRange,
+      published: publishedAt,
+      age,
+      alphabet,
+      searchQuery,
+      type,
+      // eslint-disable-next-line prefer-const
+
+      limit,
+      // eslint-disable-next-line prefer-const
+
+      page,
+    } = Object.fromEntries(url.searchParams);
     const validation = searchSchama.safeParse({
       priceRange,
       publishedAt,
@@ -25,15 +47,17 @@ export async function GET(req: Request) {
       searchQuery,
       userId,
       type,
-      limit,
+      limit: Number(limit),
+      page: Number(page),
     });
+
+    const skip = (Number(page) - 1) * Number(limit);
     if (!validation.success) {
       return NextResponse.json({
         error: validation.error.flatten().fieldErrors,
         status: 409,
       });
     }
-
     let publishedData;
 
     if (publishedAt) {
@@ -57,21 +81,31 @@ export async function GET(req: Request) {
     const filters: any = {};
     const gameNameFilter = [];
     if (searchQuery) {
-      gameNameFilter.push({ contains: searchQuery, mode: "insensitive" });
+      gameNameFilter.push({
+        productName: { contains: searchQuery, mode: "insensitive" },
+      });
     }
     if (alphabet) {
-      gameNameFilter.push({ contains: alphabet, mode: "insensitive" });
+      gameNameFilter.push({
+        productName: { contains: alphabet, mode: "insensitive" },
+      });
     }
     if (gameNameFilter.length > 0) {
+      if (filters.OR) return;
       filters.OR = gameNameFilter;
     }
     if (type) {
+      if (filters.type) return;
       filters.gameType = type;
     }
 
     if (priceRange) {
-      const [minValue, maxValue] = priceRange.split("-").map(Number);
-      filters.price = { gte: minValue, lte: maxValue };
+      const [minValue, maxValue] = priceRange
+        .replace(/[^\d.-]/g, "")
+        .split("-")
+        .map(Number);
+      if (filters.priceDetails) return;
+      filters.priceDetails = { salePrice: { gte: minValue, lte: maxValue } };
     }
     if (publishedData) {
       filters.createdAt = { gte: publishedData };
@@ -82,26 +116,64 @@ export async function GET(req: Request) {
     await prisma.$connect().catch((error) => {
       throw new Error(error);
     });
-    const resultGame = await prisma.product.findMany({
+    const product = await prisma.product.findMany({
       where: filters,
+      skip: skip,
+      take: Number(limit),
       orderBy: { createdAt: "desc" },
     });
-    if (!resultGame) {
+    const totalCount = await prisma.product.count({
+      where: filters,
+    });
+    if (!product || product.length < 1) {
       return NextResponse.json({
         message: "Game can't find",
       });
     }
-    await prisma.searchHistory.create({
-      data: {
-        userId: userId,
-        search: {
-          create: { searchQuery: searchQuery },
+    if (userId) {
+      const userSearchHistory = await prisma.searchHistory.findUnique({
+        where: { userId },
+        include: {
+          search: true,
         },
-      },
-    });
+      });
+      if (!userSearchHistory) {
+        await prisma.searchHistory.create({
+          data: {
+            userId: userId,
+            search: {
+              create: { searchQuery: searchQuery },
+            },
+          },
+        });
+      } else {
+        const searchExist = userSearchHistory?.search.find(
+          (se) => se.searchQuery === searchQuery
+        );
+
+        // const searchExist = await prisma.search.findFirst({
+        //   where: { searchQuery },
+        // });
+        if (!searchExist) {
+          await prisma.search.create({
+            data: {
+              searchHistory: {
+                connect: { id: userSearchHistory.id },
+              },
+              searchQuery,
+            },
+          });
+        }
+      }
+    }
+    const totalPage = totalCount / Number(limit);
     return NextResponse.json({
       message: "success",
-      resultGame: resultGame,
+      product,
+      limit,
+      page,
+      totalPage,
+      totalCount,
       status: 200,
     });
   } catch (error) {
