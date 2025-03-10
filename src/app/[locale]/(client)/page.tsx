@@ -11,6 +11,7 @@ import TrendingSkeleton from "@/components/productCards/trendingCardSkeleton";
 import TopRated from "@/components/clientComponents/topRated";
 import SubCategory from "./subCatagorySection";
 import ProductCarousel from "@/components/clientComponents/dealoftheweek";
+import { useGetCartItemsQuery } from "@/state/features/cartApi";
 
 const LIMIT_3 = 3; // Limit for the first set of trending products
 const LIMIT_12 = 12; // Limit for the recommended products
@@ -71,7 +72,8 @@ const ProductList = () => {
   console.log("Recommended:", recommendedProducts);
   console.log("Top Rated:", topRatedProducts);
   console.log("Deal of the Week:", dealOfTheWeekProduct);
-
+  const { data } = useGetCartItemsQuery();
+  console.log("Total quantity", data);
   return (
     <Container>
       <div className="w-full flex flex-col gap-4">

@@ -146,7 +146,58 @@ export async function GET() {
         },
       },
     });
-    return NextResponse.json({ cart }, { status: 200 });
+
+    if (!cart) {
+      return NextResponse.json(
+        { cart: [], totalPrice: 0, totalQuantity: 0 },
+        { status: 200 }
+      );
+    }
+
+    const cartItems = cart.cartItems.map((item) => ({
+      id: item.id,
+      productId: item.productId,
+      type: item.type,
+      quantity: item.quantity,
+      rentalStart: item.rentalStart,
+      rentalEnd: item.rentalEnd,
+      product: item.product,
+      priceDetails: item.product.priceDetails,
+      reviews: item.product.reviews,
+    }));
+
+    // Calculate total price based on SALE or RENT type
+    const totalPrice = cartItems.reduce((acc, item) => {
+      const { priceDetails, type, quantity, rentalStart, rentalEnd } = item;
+
+      if (type === "SALE") {
+        return acc + (quantity || 1) * (priceDetails?.salePrice || 0);
+      } else if (type === "RENT" && rentalStart && rentalEnd) {
+        const startDate = new Date(rentalStart);
+        const endDate = new Date(rentalEnd);
+        const rentalDays = Math.max(
+          1,
+          Math.ceil(
+            (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+          )
+        );
+        return (
+          acc +
+          (quantity || 1) * (priceDetails?.rentalPricePerHour || 0) * rentalDays
+        );
+      }
+      return acc;
+    }, 0);
+
+    const totalQuantity = cartItems.reduce(
+      (acc, item) => acc + (item.quantity || 1),
+      0
+    );
+
+    return NextResponse.json(
+      { cart: cartItems, totalPrice, totalQuantity },
+      { status: 200 }
+    );
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "An unknown error occurred";
@@ -184,10 +235,10 @@ export async function PATCH(req: Request) {
     if (!userId)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { cartItemId, quantity, rentalStart, rentalEnd } = await req.json();
+    const { productId, quantity, rentalStart, rentalEnd } = await req.json();
 
     const updatedCartItem = await prisma.cartOnProduct.update({
-      where: { id: cartItemId },
+      where: { id: productId },
       data: {
         quantity,
         rentalStart: rentalStart ? new Date(rentalStart) : undefined,

@@ -5,18 +5,20 @@ import { useRouter } from "next/navigation";
 
 export function CartButton() {
   const { data } = useGetCartItemsQuery();
-  const totalQuantity = data?.totalQuantity ?? 0;
+  const totalQuantity =
+    data?.cart.reduce((acc, item) => acc + (item.quantity || 0), 0) ?? 0;
   const router = useRouter();
   const currentPath = window.location.pathname.split("/").slice(0, 2).join("");
+
   return (
     <Button
       variant="ghost"
       size="icon"
-      className="relative text-white"
+      className="relative text-white hover:bg-gray-300"
       onClick={() => router.push(`${currentPath}/cart`)}
     >
       <ShoppingCart className="h-6 w-6 sm:h-8 sm:w-8" />
-      <span className="absolute -right-1 -top-1 h-5 w-5 rounded-full bg-orange-500 text-[10px] font-bold">
+      <span className="absolute -right-1 -top-1 h-5 w-5 rounded-full bg-orange-500 text-[10px] font-bold ">
         {totalQuantity}
       </span>
     </Button>

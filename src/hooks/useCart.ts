@@ -66,8 +66,8 @@ export const useCart = () => {
           productId: product.id,
           type,
           quantity,
-          rentalStart,
-          rentalEnd,
+          rentalStart: rentalStart?.toISOString(),
+          rentalEnd: rentalEnd?.toISOString(),
         }).unwrap();
         refetch();
 
