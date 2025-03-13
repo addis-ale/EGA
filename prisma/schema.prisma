@@ -50,7 +50,7 @@ model Product {
   uploadedCoverImage  String
   uploadedVideo      VideoUploaded[]
   discountPercentage  Float         @default(0)
-  ageRestriction      String
+  ageRestriction      Int
   gameType            String
   availableForSale    Int      @default(0)    
   availableForRent    Int       @default(0)   

@@ -1,19 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 // import FilterInterface from "@/components/filter-interface";
 // import ProductGrid from "@/components/product-grid";
 // import Header from "@/components/header";
 // import type { Product } from "@/lib/products";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
-import FilterInterface from "@/components/clientComponents/filter";
+// import FilterInterface from "@/components/clientComponents/filter";
 import Container from "@/components/container";
-// import ProductListingCard from "@/components/productCards/trendingCard";
+import ProductListingCard from "@/components/productCards/trendingCard";
 import { useGetFilterProductQuery } from "@/state/features/filterApi";
 import { Button } from "@/components/ui/button";
 import { Product } from "@prisma/client";
+import FilterInterface from "@/components/filter";
 // import { Pagination } from "@/components/pagination";
 
 // interface ApiResponse {
@@ -41,6 +42,7 @@ interface paginationProps {
 
 export default function FilterPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const router = useRouter();
   // const [isLoading, setIsLoading] = useState(true);
   const [Error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<paginationProps>({
@@ -56,26 +58,34 @@ export default function FilterPage() {
   // const params = new URLSearchParams(searchParams?.toString());
 
   const queryParams = useMemo(() => {
-    return { page: Number(pagination.page), limit: Number(pagination.limit) };
+    return { page: pagination.page, limit: pagination.limit };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, pagination.limit, pagination.page]);
 
   const { data, error, isLoading } = useGetFilterProductQuery(queryParams);
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams?.toString());
+
+    params.set("page", pagination?.page?.toString());
+    params.set("limit", pagination?.limit?.toString());
+    if (data) {
+      setProducts(data?.product);
+      // setPagination(data.limit);
+      setPagination((prev) => ({
+        ...prev,
+        limit: data.limit,
+        page: data.page,
+        total: data.totalCount,
+        totalPages: data.totalPage,
+      }));
+    }
+  }, [searchParams, pagination.limit, pagination.page, data]);
+  useEffect(() => {});
   if (isLoading) return <p>Loading...</p>;
   if (error) {
     setError("error happend");
   }
-  if (data) {
-    setProducts(data?.product);
-    // setPagination(data.limit);
-    setPagination((prev) => ({
-      ...prev,
-      limit: data.limit,
-      page: data.page,
-      total: data.totalCount,
-      totalPages: data.totalPage,
-    }));
-  }
+
   // useEffect(() => {
   //   const fetchProducts = async () => {
   //     setIsLoading(true);
@@ -119,7 +129,7 @@ export default function FilterPage() {
   const handlePageChange = (newPage: number) => {
     setPagination((prev) => ({
       ...prev,
-      page: prev.page + newPage,
+      page: Number(prev.page) + newPage,
     }));
   };
 
@@ -165,10 +175,10 @@ export default function FilterPage() {
                   </div>
                 </div>
                 {products}
-                {/* {products &&
+                {products &&
                   products.map((product) => (
-                    // <ProductListingCard key={product?.id} product={product} />
-                  ))} */}
+                    <ProductListingCard key={product?.id} product={product} />
+                  ))}
                 {/* <ProductGrid products={products} isLoading={isLoading} /> */}
 
                 {/* {!isLoading && pagination.totalPages > 1 && (

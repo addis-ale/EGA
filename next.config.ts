@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   images: {
     domains: ["example.com", "images.unsplash.com"],
   },
+  // next.config.js
+
+  reactStrictMode: false,
 };
 
 const withNextIntl = createNextIntlPlugin();

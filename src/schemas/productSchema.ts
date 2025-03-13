@@ -13,7 +13,7 @@ export const productSchema = z
       .max(100, "Discount cannot exceed 100%")
       .optional(),
 
-    ageRestriction: z.string().min(0, "Age restriction is required"),
+    ageRestriction: z.number().min(0, "Age restriction is required"),
     gameType: z.string().min(1, "Game type is required"),
 
     // Stock Availability

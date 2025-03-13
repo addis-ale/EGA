@@ -6,6 +6,7 @@ import currentUserState from "./features/currentUserSlice"; // User state slice
 import { productApi } from "./features/productApi";
 import { wishlistApi } from "./features/whishlistApi";
 import { cartApi } from "./features/cartApi";
+import { FilterApi } from "./features/filterApi";
 
 // Configuration for Redux Persist
 const persistConfig = {
@@ -21,6 +22,7 @@ const rootReducer = combineReducers({
   [productApi.reducerPath]: productApi.reducer,
   [wishlistApi.reducerPath]: wishlistApi.reducer,
   [cartApi.reducerPath]: cartApi.reducer,
+  [FilterApi.reducerPath]: FilterApi.reducer,
 });
 
 // Wrap rootReducer with persistReducer
@@ -35,7 +37,8 @@ export const store = configureStore({
     }).concat(
       productApi.middleware,
       wishlistApi.middleware,
-      cartApi.middleware
+      cartApi.middleware,
+      FilterApi.middleware
     ), // Add both middlewares
 });
 

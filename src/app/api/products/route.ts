@@ -262,7 +262,7 @@ function handleError(error: unknown, res: Response) {
 
   if (error instanceof Error) {
     return NextResponse.json(
-      { success: false, message: "Record not found" },
+      { success: false, message: error.message },
       { status: 403 }
     );
   }

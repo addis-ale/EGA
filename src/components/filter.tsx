@@ -16,7 +16,7 @@ import Container from "@/components/container";
 type Filter = {
   id: string;
   label: string;
-  category: "price" | "published" | "alphabet" | "age" | "type";
+  category: "price" | "published" | "alphabet" | "age" | "type" | "searchQuery";
 };
 
 export default function FilterInterface() {
@@ -24,15 +24,15 @@ export default function FilterInterface() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
-
+  const [search, setsearch] = useState("");
   useEffect(() => {
     const filters: Filter[] = [];
 
-    searchParams?.getAll("price").forEach((value) => {
+    searchParams?.getAll("price")?.forEach((value) => {
       filters.push({ id: `price-${value}`, label: value, category: "price" });
     });
 
-    searchParams?.getAll("published").forEach((value) => {
+    searchParams?.getAll("published")?.forEach((value) => {
       filters.push({
         id: `published-${value}`,
         label: value,
@@ -40,11 +40,11 @@ export default function FilterInterface() {
       });
     });
 
-    searchParams?.getAll("type").forEach((value) => {
+    searchParams?.getAll("type")?.forEach((value) => {
       filters.push({ id: `type-${value}`, label: value, category: "type" });
     });
 
-    searchParams?.getAll("alphabet").forEach((value) => {
+    searchParams?.getAll("alphabet")?.forEach((value) => {
       filters.push({
         id: `alphabet-${value}`,
         label: value,
@@ -52,19 +52,25 @@ export default function FilterInterface() {
       });
     });
 
-    searchParams?.getAll("age").forEach((value) => {
+    searchParams?.getAll("age")?.forEach((value) => {
       filters.push({ id: `age-${value}`, label: value, category: "age" });
     });
-
+    const search = searchParams?.get("searchQuery") || "";
+    if (search) {
+      setsearch(search);
+    }
     setActiveFilters(filters);
   }, [searchParams]);
 
   const addFilter = (filter: Filter) => {
     setActiveFilters((prev) => {
-      if (!prev.some((f) => f.id === filter.id)) {
+      if (!prev.some((f) => f.category === filter.category)) {
         return [...prev, filter];
       }
-      return prev;
+      return [
+        ...prev.filter((prev) => prev.category !== filter.category),
+        filter,
+      ];
     });
   };
 
@@ -83,13 +89,13 @@ export default function FilterInterface() {
       activeFilters.forEach((filter) => {
         params.append(filter.category, filter.label);
       });
-
+      params.set("searchQuery", search);
       router.push(`${pathname}?${params.toString()}`);
     }, 400);
 
     return () => clearTimeout(timeOut);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeFilters]);
+  }, [activeFilters, search]);
 
   return (
     <Container>
@@ -230,7 +236,7 @@ export default function FilterInterface() {
           </DropdownMenu>
         </div>
 
-        {activeFilters.length > 0 && (
+        {activeFilters?.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 mt-4">
             {activeFilters.map((filter) => (
               <Badge
