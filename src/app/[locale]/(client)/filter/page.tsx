@@ -1,49 +1,42 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-// import FilterInterface from "@/components/filter-interface";
-// import ProductGrid from "@/components/product-grid";
-// import Header from "@/components/header";
-// import type { Product } from "@/lib/products";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import { useSearchParams } from "next/navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
-// import FilterInterface from "@/components/clientComponents/filter";
+import { AlertCircle } from "lucide-react";
 import Container from "@/components/container";
 import ProductListingCard from "@/components/productCards/trendingCard";
-import { useGetFilterProductQuery } from "@/state/features/filterApi";
-import { Button } from "@/components/ui/button";
-import { Product } from "@prisma/client";
+import { PriceDetails, Product, Review } from "@prisma/client";
 import FilterInterface from "@/components/filter";
-// import { Pagination } from "@/components/pagination";
 
-// interface ApiResponse {
-//   products: Product[];
-//   pagination: {
-//     total: number;
-//     page: number;
-//     limit: number;
-//     totalPages: number;
-//   };
-// }
-// interface productProps {
-//   product: Product[];
-//   totalCount: number;
-//   totalPage: number;
-//   limit: number;
-//   page: number;
-// }
+interface FilterProductResponse {
+  message: string;
+  product: (Product & {
+    priceDetails: PriceDetails;
+    reviews: Review[];
+  })[];
+  limit: string;
+  page: string;
+  totalPage: number;
+  totalCount: number;
+  status: number;
+}
 interface paginationProps {
   total: number;
   limit: number;
   totalPages: number;
   page: number;
 }
-
+interface ProductProps {
+  product: Product & {
+    priceDetails: PriceDetails;
+    reviews: Review[];
+  };
+}
 export default function FilterPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const router = useRouter();
-  // const [isLoading, setIsLoading] = useState(true);
+  const [products, setProducts] = useState<ProductProps["product"][]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [Error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<paginationProps>({
     total: 0,
@@ -53,85 +46,65 @@ export default function FilterPage() {
   });
 
   const searchParams = useSearchParams();
-  // const router = useRouter();
 
-  // const params = new URLSearchParams(searchParams?.toString());
+  const searchQuery = searchParams.get("searchQuery") || "";
 
-  const queryParams = useMemo(() => {
-    return { page: pagination.page, limit: pagination.limit };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, pagination.limit, pagination.page]);
-
-  const { data, error, isLoading } = useGetFilterProductQuery(queryParams);
   useEffect(() => {
-    const params = new URLSearchParams(searchParams?.toString());
-
-    params.set("page", pagination?.page?.toString());
-    params.set("limit", pagination?.limit?.toString());
-    if (data) {
-      setProducts(data?.product);
-      // setPagination(data.limit);
+    if (!searchQuery) {
+      setProducts([]);
       setPagination((prev) => ({
         ...prev,
-        limit: data.limit,
-        page: data.page,
-        total: data.totalCount,
-        totalPages: data.totalPage,
-      }));
+        total: 0,
+        totalPages: 0,
+      })); // ✅ Reset when searchQuery is cleared
     }
-  }, [searchParams, pagination.limit, pagination.page, data]);
-  useEffect(() => {});
-  if (isLoading) return <p>Loading...</p>;
-  if (error) {
-    setError("error happend");
-  }
+  }, [searchQuery]);
 
-  // useEffect(() => {
-  //   const fetchProducts = async () => {
-  //     setIsLoading(true);
-  //     setError(null);
+  // if (isLoading) return <p>Loading...</p>;
+  // if (error) {
+  //   setError("error happend");
+  // }
 
-  //     try {
-  //       const params = new URLSearchParams(searchParams?.toString());
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      setError(null);
 
-  //       params.set("page", pagination?.page?.toString());
-  //       params.set("limit", pagination?.limit.toString());
+      try {
+        const params = new URLSearchParams(searchParams?.toString());
 
-  //       const response = await fetch(`/api/search?${params.toString()}`);
+        params.set("page", pagination?.page?.toString());
+        params.set("limit", pagination?.limit.toString());
 
-  //       if (!response.ok) {
-  //         throw new Error(`API error: ${response.status}`);
-  //       }
+        const response = await fetch(`/api/search?${params.toString()}`);
 
-  //       const data: productProps = await response.json();
-  //       console.log(data);
+        if (!response.ok) {
+          // throw new Error(`API error: ${response.status}`);
+        }
 
-  //       setProducts(data.product);
-  //       // setPagination(data.limit);
-  //       setPagination((prev) => ({
-  //         ...prev,
-  //         limit: data.limit,
-  //         page: data.page,
-  //         total: data.totalCount,
-  //         totalPages: data.totalPage,
-  //       }));
-  //     } catch (error) {
-  //       console.error("Failed to fetch products:", error);
-  //       setError("Failed to load products. Please try again.");
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
+        const data: FilterProductResponse = await response.json();
+        console.log(data);
 
-  //   fetchProducts();
-  // }, [searchParams]);
+        setProducts(data?.product);
+        // setPagination(data.limit);
+        setPagination((prev) => ({
+          ...prev,
+          limit: Number(data.limit),
+          page: Number(data.page),
+          total: data.totalCount,
+          totalPages: data.totalPage,
+        }));
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+        setError("Failed to load products. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const handlePageChange = (newPage: number) => {
-    setPagination((prev) => ({
-      ...prev,
-      page: Number(prev.page) + newPage,
-    }));
-  };
+    fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   return (
     <Container>
@@ -140,7 +113,7 @@ export default function FilterPage() {
           <FilterInterface />
 
           <div className="container mx-auto px-4 mt-8">
-            {error ? (
+            {Error ? (
               <Alert variant="destructive" className="mb-6">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{Error}</AlertDescription>
@@ -152,44 +125,17 @@ export default function FilterPage() {
                     {pagination.total} Products
                     {searchParams?.toString() ? " (Filtered)" : ""}
                   </h2>
-                  <div>
-                    <Button
-                      variant="outline"
-                      onClick={() => handlePageChange(-1)}
-                      size="icon"
-                      className={`${(pagination.page = 0)} && disabled`}
-                    >
-                      <ChevronLeft />
-                    </Button>
-                    {pagination.page}
-                    <Button
-                      variant="outline"
-                      onClick={() => handlePageChange(1)}
-                      size="icon"
-                      className={`${
-                        pagination.totalPages === pagination.page
-                      }&& disabled`}
-                    >
-                      <ChevronRight />
-                    </Button>
+                </div>
+                {isLoading && <div className="items-center">Loading...</div>}
+                {products && (
+                  <div className="flex gap-10 flex-wrap">
+                    {products.map((product) => (
+                      <div key={product?.id} className="flex gap-10">
+                        <ProductListingCard product={product} />
+                      </div>
+                    ))}
                   </div>
-                </div>
-                {products}
-                {products &&
-                  products.map((product) => (
-                    <ProductListingCard key={product?.id} product={product} />
-                  ))}
-                {/* <ProductGrid products={products} isLoading={isLoading} /> */}
-
-                {/* {!isLoading && pagination.totalPages > 1 && (
-                <div className="mt-8 flex justify-center">
-                  <Pagination
-                    currentPage={pagination.page}
-                    totalPages={pagination.totalPages}
-                    onPageChange={handlePageChange}
-                  />
-                </div>
-              )} */}
+                )}
               </>
             )}
           </div>

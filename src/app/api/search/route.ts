@@ -28,8 +28,8 @@ export async function GET(req: Request) {
     const {
       price: priceRange,
       published: publishedAt,
-      age,
-      alphabet,
+      // age,
+      // alphabet,
       searchQuery,
       type,
       // eslint-disable-next-line prefer-const
@@ -42,16 +42,24 @@ export async function GET(req: Request) {
     const validation = searchSchama.safeParse({
       priceRange,
       publishedAt,
-      age,
-      alphabet,
+      // age,
+      // alphabet,
       searchQuery,
       userId,
       type,
       limit: Number(limit),
       page: Number(page),
     });
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
 
-    const skip = (Number(page) - 1) * Number(limit);
+    // Ensure valid positive numbers
+    const validPage = !isNaN(pageNumber) && pageNumber > 0 ? pageNumber : 1;
+    const validLimit =
+      !isNaN(limitNumber) && limitNumber > 0 ? limitNumber : 10;
+
+    const skip = (validPage - 1) * validLimit;
+
     if (!validation.success) {
       return NextResponse.json({
         error: validation.error.flatten().fieldErrors,
@@ -85,9 +93,9 @@ export async function GET(req: Request) {
         productName: { contains: searchQuery, mode: "insensitive" },
       });
     }
-    if (alphabet) {
+    if (searchQuery) {
       gameNameFilter.push({
-        productName: { contains: alphabet, mode: "insensitive" },
+        productName: { startsWith: searchQuery, mode: "insensitive" },
       });
     }
     if (gameNameFilter.length > 0) {
@@ -110,14 +118,18 @@ export async function GET(req: Request) {
     if (publishedData) {
       filters.createdAt = { gte: publishedData };
     }
-    if (age) {
-      filters.ageRestriction = Number(age);
-    }
+    // if (age) {
+    //   filters.ageRestriction = Number(age);
+    // }
     await prisma.$connect().catch((error) => {
       throw new Error(error);
     });
     const product = await prisma.product.findMany({
       where: filters,
+      include: {
+        reviews: true,
+        priceDetails: true,
+      },
       skip: skip,
       take: Number(limit),
       orderBy: { createdAt: "desc" },
@@ -128,6 +140,7 @@ export async function GET(req: Request) {
     if (!product || product.length < 1) {
       return NextResponse.json({
         message: "Game can't find",
+        product,
       });
     }
     if (userId) {

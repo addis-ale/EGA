@@ -123,14 +123,14 @@ export async function GET(req: Request) {
         );
       }
 
-      const searchHistory = await prisma.searchHistory.findMany({
-        where: { userId: user.id },
-        select: { query: true },
+      const searchHistory = await prisma.search.findMany({
+        where: { id: user.id },
+        select: { searchQuery: true },
       });
 
       if (searchHistory.length > 0) {
         const searchKeywords = searchHistory
-          .map((entry) => entry.query)
+          .map((entry) => entry.searchQuery)
           .filter(Boolean);
         if (searchKeywords.length > 0) {
           where = {

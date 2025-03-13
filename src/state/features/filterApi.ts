@@ -1,30 +1,35 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { Product } from "@prisma/client";
+import { Product, PriceDetails, Review } from "@prisma/client";
+
+interface FilterProductResponse {
+  message: string;
+  product: (Product & {
+    priceDetails: PriceDetails;
+    reviews: Review[];
+  })[];
+  limit: string;
+  page: string;
+  totalPage: number;
+  totalCount: number;
+  status: number;
+}
 
 export const FilterApi = createApi({
   reducerPath: "filterApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "/api", // Ensure this matches your actual API base URL
+    baseUrl: "/api",
   }),
-  tagTypes: ["filter"],
   endpoints: (builder) => ({
     getFilterProduct: builder.query<
-      {
-        product: Product[];
-        limit: number;
-        totalCount: number;
-        totalPage: number;
-        page: number;
-      },
-      { page: number; limit: number }
+      FilterProductResponse,
+      { page: number; limit: number; searchQuery: string }
     >({
       query: ({ page, limit }) => {
         const params = new URLSearchParams();
-        params.append("page", String(page));
-        params.append("limit", String(limit));
+        params.set("page", String(page));
+        params.set("limit", String(limit));
         return `/search?${params.toString()}`;
       },
-      providesTags: ["filter"],
     }),
   }),
 });

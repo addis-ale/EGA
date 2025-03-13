@@ -32,7 +32,7 @@ export function SearchBar() {
 
     // Navigate to /en/filter if not already there
     if (pathname !== "/en/filter") {
-      router.push(`/en/filter?${query.toString()}`);
+      router.replace(`/en/filter?${query.toString()}`);
     } else {
       router.replace(`/en/filter?${query.toString()}`); // Replace the current history entry
     }

@@ -9,14 +9,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Clock, DollarSign, Package, SortAsc, User, X } from "lucide-react";
+import { Clock, DollarSign, Package, X } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Container from "@/components/container";
 
 type Filter = {
   id: string;
   label: string;
-  category: "price" | "published" | "alphabet" | "age" | "type" | "searchQuery";
+  category: "price" | "published" | "type" | "searchQuery";
 };
 
 export default function FilterInterface() {
@@ -44,17 +44,14 @@ export default function FilterInterface() {
       filters.push({ id: `type-${value}`, label: value, category: "type" });
     });
 
-    searchParams?.getAll("alphabet")?.forEach((value) => {
-      filters.push({
-        id: `alphabet-${value}`,
-        label: value,
-        category: "alphabet",
-      });
-    });
+    // searchParams?.getAll("alphabet")?.forEach((value) => {
+    //   filters.push({
+    //     id: `alphabet-${value}`,
+    //     label: value,
+    //     category: "alphabet",
+    //   });
+    // });
 
-    searchParams?.getAll("age")?.forEach((value) => {
-      filters.push({ id: `age-${value}`, label: value, category: "age" });
-    });
     const search = searchParams?.get("searchQuery") || "";
     if (search) {
       setsearch(search);
@@ -183,7 +180,7 @@ export default function FilterInterface() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <DropdownMenu>
+          {/* <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
@@ -209,9 +206,9 @@ export default function FilterInterface() {
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu> */}
 
-          <DropdownMenu>
+          {/* <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
@@ -233,7 +230,7 @@ export default function FilterInterface() {
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu> */}
         </div>
 
         {activeFilters?.length > 0 && (

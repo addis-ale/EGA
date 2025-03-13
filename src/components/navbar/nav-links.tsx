@@ -10,7 +10,7 @@ export function NavLinks() {
         {t("home")}
       </Link>
       <Link
-        href="/filter"
+        href="/en/filter"
         className="text-sm text-white hover:text-gray-300 font-semibold"
       >
         {t("filter")}
