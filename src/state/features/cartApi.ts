@@ -62,6 +62,8 @@ export const cartApi = createApi({
       ) {
         const patchResult = dispatch(
           cartApi.util.updateQueryData("getCartItems", undefined, (draft) => {
+            if (!draft) return;
+            draft.cartItems = draft.cartItems || [];
             if (!Array.isArray(draft.cartItems)) {
               draft.cartItems = [];
             }

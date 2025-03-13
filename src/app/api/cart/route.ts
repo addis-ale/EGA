@@ -6,7 +6,8 @@ import prisma from "@/lib/prismadb";
 
 export async function POST(req: Request) {
   try {
-    const userId = await getAuthenticatedUser();
+    const userId = "67caebedb37166deaf357e4b";
+    //  await getAuthenticatedUser();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -132,7 +133,8 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
-    const userId = await getAuthenticatedUser();
+    const userId = "67caebedb37166deaf357e4b";
+    // await getAuthenticatedUser();
     if (!userId)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

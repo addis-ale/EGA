@@ -27,7 +27,8 @@ export function SearchBar() {
     if (debouncedSearchQuery.trim()) {
       query.set("searchQuery", debouncedSearchQuery);
     } else {
-      query.delete("searchQuery"); // Remove searchQuery if it's empty
+      query.delete("searchQuery");
+      return; // Remove searchQuery if it's empty
     }
 
     // Navigate to /en/filter if not already there

@@ -1,13 +1,20 @@
 "use client";
 
 import Image from "next/image";
-import { Trash2, Plus, Minus, Tag } from "lucide-react";
+import { Trash2, Plus, Minus, Tag, Calendar, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { useUpdateCartItemMutation } from "@/state/features/cartApi";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface CartItem {
   id: string;
@@ -24,6 +31,12 @@ interface CartItem {
   };
   quantity?: number;
   type: string;
+  rentalStartDate?: string;
+  rentalEndDate?: string;
+  rentalDates?: {
+    startDate: Date | null;
+    endDate: Date | null;
+  };
 }
 
 interface CartItemsProps {
@@ -38,6 +51,17 @@ const CartItems = ({ cartItems, totalPrice }: CartItemsProps) => {
       acc[item.id] = item.quantity || 1;
       return acc;
     }, {} as { [key: string]: number })
+  );
+
+  const [rentalDates, setRentalDates] = useState<{
+    [key: string]: { startDate: Date | null; endDate: Date | null };
+  }>(
+    cartItems.reduce((acc, item) => {
+      if (item.type === "rental") {
+        acc[item.id] = item.rentalDates || { startDate: null, endDate: null };
+      }
+      return acc;
+    }, {} as { [key: string]: { startDate: Date | null; endDate: Date | null } })
   );
 
   const handleQuantityChange = async (id: string, increment: number) => {
@@ -56,6 +80,69 @@ const CartItems = ({ cartItems, totalPrice }: CartItemsProps) => {
     } catch (error) {
       console.error("Failed to update quantity:", error);
     }
+  };
+
+  const handleDateChange = async (
+    id: string,
+    type: "startDate" | "endDate",
+    date: Date | null
+  ) => {
+    setRentalDates((prev) => {
+      const currentDates = prev[id] || { startDate: null, endDate: null };
+      return {
+        ...prev,
+        [id]: {
+          ...currentDates,
+          [type]: date,
+        },
+      };
+    });
+
+    // You could add an API call here to update the rental dates on the server
+    try {
+      await updateCartItem({
+        productId: id,
+        rentalDates: {
+          ...rentalDates[id],
+          [type]: date,
+        },
+      }).unwrap();
+    } catch (error) {
+      console.error("Failed to update rental dates:", error);
+    }
+  };
+
+  const calculateRentalDuration = (
+    startDate: Date | null,
+    endDate: Date | null
+  ) => {
+    if (!startDate || !endDate) return 0;
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    return diffDays;
+  };
+
+  // Function to calculate rental price based on hours between dates
+  const calculateRentalPrice = (item: CartItem) => {
+    if (!item.rentalStartDate || !item.rentalEndDate) return 0;
+
+    const startDate = new Date(item.rentalStartDate);
+    const endDate = new Date(item.rentalEndDate);
+
+    // Calculate difference in hours
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+    const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
+
+    // Calculate price based on hourly rate and quantity
+    const itemQuantity = quantity[item.id] || 1;
+    const totalPrice =
+      diffHours * item.priceDetails.rentalPricePerHour * itemQuantity;
+
+    return totalPrice;
   };
 
   return (
@@ -98,6 +185,186 @@ const CartItems = ({ cartItems, totalPrice }: CartItemsProps) => {
                         {item.product.gameType}
                       </span>
                     </p>
+                    {/* Display rental dates if item type is rental */}
+                    {item.type === "rental" && (
+                      <div className="mt-2 text-sm text-gray-300">
+                        <div className="flex items-center gap-1 mt-1">
+                          <Calendar className="h-4 w-4 text-gray-400" />
+                          <span>Rental Period:</span>
+                        </div>
+                        <div className="ml-5 mt-1 space-y-1">
+                          <p>
+                            <span className="text-gray-400">Start:</span>{" "}
+                            <span className="font-medium text-white">
+                              {item.rentalStartDate
+                                ? new Date(
+                                    item.rentalStartDate
+                                  ).toLocaleDateString()
+                                : "Not set"}
+                            </span>
+                          </p>
+                          <p>
+                            <span className="text-gray-400">End:</span>{" "}
+                            <span className="font-medium text-white">
+                              {item.rentalEndDate
+                                ? new Date(
+                                    item.rentalEndDate
+                                  ).toLocaleDateString()
+                                : "Not set"}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Calculated Rental Price Component */}
+                    {item.type === "rental" &&
+                      item.rentalStartDate &&
+                      item.rentalEndDate && (
+                        <div className="mt-2 text-sm">
+                          <div className="flex items-center gap-1 mt-1">
+                            <DollarSign className="h-4 w-4 text-green-400" />
+                            <span className="text-gray-300">
+                              Calculated Price:
+                            </span>
+                          </div>
+                          <div className="ml-5 mt-1">
+                            <div className="flex flex-col">
+                              <p className="text-gray-300">
+                                <span className="text-gray-400">Rate:</span>{" "}
+                                <span className="font-medium text-white">
+                                  $
+                                  {item.priceDetails.rentalPricePerHour.toFixed(
+                                    2
+                                  )}
+                                  /hour
+                                </span>
+                              </p>
+                              <p className="text-gray-300">
+                                <span className="text-gray-400">Duration:</span>{" "}
+                                <span className="font-medium text-white">
+                                  {Math.ceil(
+                                    Math.abs(
+                                      new Date(item.rentalEndDate).getTime() -
+                                        new Date(item.rentalStartDate).getTime()
+                                    ) /
+                                      (1000 * 60 * 60)
+                                  )}{" "}
+                                  hours
+                                </span>
+                              </p>
+                              <p className="text-gray-300">
+                                <span className="text-gray-400">Quantity:</span>{" "}
+                                <span className="font-medium text-white">
+                                  {quantity[item.id] || 1}
+                                </span>
+                              </p>
+                              <p className="text-green-400 font-medium mt-1">
+                                Total: ${calculateRentalPrice(item).toFixed(2)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                    {/* Rental Dates Section */}
+                    {item.type === "rental" && (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-sm font-medium text-gray-300">
+                          Rental Period:
+                        </p>
+                        <div className="flex flex-wrap gap-3">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-[140px] justify-start text-left font-normal border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white",
+                                  !rentalDates[item.id]?.startDate &&
+                                    "text-muted-foreground"
+                                )}
+                              >
+                                <Calendar className="mr-2 h-4 w-4" />
+                                {rentalDates[item.id]?.startDate ? (
+                                  format(rentalDates[item.id].startDate, "PPP")
+                                ) : (
+                                  <span>Start date</span>
+                                )}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-auto p-0 bg-zinc-800 border-zinc-700"
+                              align="start"
+                            >
+                              <CalendarComponent
+                                mode="single"
+                                selected={
+                                  rentalDates[item.id]?.startDate || undefined
+                                }
+                                onSelect={(date) =>
+                                  handleDateChange(item.id, "startDate", date)
+                                }
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-[140px] justify-start text-left font-normal border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white",
+                                  !rentalDates[item.id]?.endDate &&
+                                    "text-muted-foreground"
+                                )}
+                              >
+                                <Calendar className="mr-2 h-4 w-4" />
+                                {rentalDates[item.id]?.endDate ? (
+                                  format(rentalDates[item.id].endDate, "PPP")
+                                ) : (
+                                  <span>End date</span>
+                                )}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-auto p-0 bg-zinc-800 border-zinc-700"
+                              align="start"
+                            >
+                              <CalendarComponent
+                                mode="single"
+                                selected={
+                                  rentalDates[item.id]?.endDate || undefined
+                                }
+                                onSelect={(date) =>
+                                  handleDateChange(item.id, "endDate", date)
+                                }
+                                initialFocus
+                                disabled={(date) =>
+                                  rentalDates[item.id]?.startDate
+                                    ? date < rentalDates[item.id].startDate
+                                    : false
+                                }
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+
+                        {rentalDates[item.id]?.startDate &&
+                          rentalDates[item.id]?.endDate && (
+                            <p className="text-sm text-gray-300">
+                              Duration:{" "}
+                              <span className="font-medium text-white">
+                                {calculateRentalDuration(
+                                  rentalDates[item.id].startDate,
+                                  rentalDates[item.id].endDate
+                                )}{" "}
+                                days
+                              </span>
+                            </p>
+                          )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-2 flex items-center justify-between">

@@ -7,11 +7,13 @@ import CartItems from "./cartDetail";
 
 const CartPage = () => {
   const { data, isLoading } = useGetCartItemsQuery();
-  const cartItems = data?.cart || [];
+  const cartItems = data?.cartItems || [];
   const totalPrice = data?.totalPrice ?? 0;
-  const totalQuantity = data?.totalQuantity ?? 0;
+  // const totalQuantity = data?.totalQuantity ?? 0;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const formatCartItems = (cartItems: any) =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     cartItems?.map((product: any) => ({
       ...product,
       priceDetails: product.priceDetails || {},
@@ -26,11 +28,7 @@ const CartPage = () => {
           <CartDetailSkeleton />
         ) : (cartItems ?? []).length > 0 ? (
           <div>
-            <CartItems
-              cartItems={myCart}
-              totalPrice={totalPrice}
-              totalQuantity={totalQuantity}
-            />
+            <CartItems cartItems={myCart} totalPrice={totalPrice} />
           </div>
         ) : (
           <EmptyCart />

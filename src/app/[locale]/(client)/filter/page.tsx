@@ -104,7 +104,7 @@ export default function FilterPage() {
 
     fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchQuery]);
 
   return (
     <Container>
