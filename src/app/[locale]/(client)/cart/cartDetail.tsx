@@ -98,15 +98,20 @@ const CartItems = ({ cartItems, totalPrice }: CartItemsProps) => {
       };
     });
 
-    // You could add an API call here to update the rental dates on the server
+    // Update the API with the correct property names (rentalStart and rentalEnd)
     try {
-      await updateCartItem({
-        productId: id,
-        rentalDates: {
-          ...rentalDates[id],
-          [type]: date,
-        },
-      }).unwrap();
+      // Convert the property names to match what the API expects
+      if (type === "startDate") {
+        await updateCartItem({
+          productId: id,
+          rentalStart: date ? date.toISOString() : undefined,
+        }).unwrap();
+      } else if (type === "endDate") {
+        await updateCartItem({
+          productId: id,
+          rentalEnd: date ? date.toISOString() : undefined,
+        }).unwrap();
+      }
     } catch (error) {
       console.error("Failed to update rental dates:", error);
     }
@@ -143,6 +148,12 @@ const CartItems = ({ cartItems, totalPrice }: CartItemsProps) => {
       diffHours * item.priceDetails.rentalPricePerHour * itemQuantity;
 
     return totalPrice;
+  };
+
+  // Helper function to safely format dates
+  const formatDate = (date: Date | null) => {
+    if (!date) return "";
+    return format(date, "PPP");
   };
 
   return (
@@ -286,7 +297,7 @@ const CartItems = ({ cartItems, totalPrice }: CartItemsProps) => {
                               >
                                 <Calendar className="mr-2 h-4 w-4" />
                                 {rentalDates[item.id]?.startDate ? (
-                                  format(rentalDates[item.id].startDate, "PPP")
+                                  formatDate(rentalDates[item.id].startDate)
                                 ) : (
                                   <span>Start date</span>
                                 )}
@@ -302,7 +313,11 @@ const CartItems = ({ cartItems, totalPrice }: CartItemsProps) => {
                                   rentalDates[item.id]?.startDate || undefined
                                 }
                                 onSelect={(date) =>
-                                  handleDateChange(item.id, "startDate", date)
+                                  handleDateChange(
+                                    item.id,
+                                    "startDate",
+                                    date || null
+                                  )
                                 }
                                 initialFocus
                               />
@@ -321,7 +336,7 @@ const CartItems = ({ cartItems, totalPrice }: CartItemsProps) => {
                               >
                                 <Calendar className="mr-2 h-4 w-4" />
                                 {rentalDates[item.id]?.endDate ? (
-                                  format(rentalDates[item.id].endDate, "PPP")
+                                  formatDate(rentalDates[item.id].endDate)
                                 ) : (
                                   <span>End date</span>
                                 )}
@@ -337,12 +352,16 @@ const CartItems = ({ cartItems, totalPrice }: CartItemsProps) => {
                                   rentalDates[item.id]?.endDate || undefined
                                 }
                                 onSelect={(date) =>
-                                  handleDateChange(item.id, "endDate", date)
+                                  handleDateChange(
+                                    item.id,
+                                    "endDate",
+                                    date || null
+                                  )
                                 }
                                 initialFocus
                                 disabled={(date) =>
                                   rentalDates[item.id]?.startDate
-                                    ? date < rentalDates[item.id].startDate
+                                    ? date < rentalDates[item.id].startDate!
                                     : false
                                 }
                               />
