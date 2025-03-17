@@ -16,6 +16,10 @@ import { useToast } from "@/hooks/use-toast";
 import { SingleStar } from "@/components/singleStar";
 import { formatPrice } from "@/utils/helper";
 import { EnhancedVideoPlayer } from "./enhancedVideoPlayer";
+import { useWishlist } from "@/hooks/useWishlist";
+import { useGetWishlistQuery } from "@/state/features/whishlistApi";
+import { useCart } from "@/hooks/useCart";
+import DateRangeDialog from "@/components/clientComponents/dateInput";
 
 interface GameProduct extends Product {
   reviews: Review[];
@@ -28,7 +32,6 @@ interface DetailHeroProps {
 }
 
 export default function DetailHero({ product }: DetailHeroProps) {
-  console.log("set up", product.uploadedVideo[0].setUp);
   const { toast } = useToast();
   const [url, setUrl] = useState("");
   const [rentalPeriod, setRentalPeriod] = useState(
@@ -47,23 +50,21 @@ export default function DetailHero({ product }: DetailHeroProps) {
   useEffect(() => {
     setUrl(window.location.href);
   }, []);
+  const { handleAddToCart } = useCart();
 
-  const handleAddToCart = () => {
-    if (product && product.id) {
-      toast({
-        title: "Product added to cart",
-        description: `${product.productName} has been added to your cart.`,
-        variant: "default",
-      });
-    }
+  const handleAddToCartBuy = () => {
+    handleAddToCart(product, "SALE", 1);
   };
 
+  const { data: wishlistData } = useGetWishlistQuery();
+
+  // Check if the product is already in the wishlist
+  const isInWishlist = wishlistData?.wishlist?.some(
+    (item) => item.id === product.id
+  );
+  const { handleToggleWishlist } = useWishlist();
   const handleAddToWishlist = () => {
-    toast({
-      title: "Added to wishlist",
-      description: `${product.productName} has been added to your wishlist.`,
-      variant: "default",
-    });
+    handleToggleWishlist(product);
   };
 
   const copyLink = async () => {
@@ -86,11 +87,11 @@ export default function DetailHero({ product }: DetailHeroProps) {
 
   const calculateTotalPrice = (): number | undefined => {
     if (
-      (purchaseType === "rent" && product.priceDetails.rentalPricePerHour) ??
+      (purchaseType === "rent" && product.priceDetails.rentalPricePerDay) ??
       0 > 0
     ) {
       const basePrice =
-        (product?.priceDetails?.rentalPricePerHour ?? 0) * (rentalPeriod ?? 1);
+        (product?.priceDetails?.rentalPricePerDay ?? 0) * (rentalPeriod ?? 1);
       return basePrice - basePrice * (product.discountPercentage / 100);
     } else if (product.priceDetails.salePrice ?? 0 > 0) {
       const basePrice = product.priceDetails.salePrice ?? 0;
@@ -143,7 +144,9 @@ export default function DetailHero({ product }: DetailHeroProps) {
               }
               <div className="flex items-center justify-center w-10 h-10 sm:w-16 sm:h-16 rounded-full bg-teal">
                 <span className="text-white text-base sm:text-xl font-extrabold">
-                  {product.ageRestriction}
+                  {product.ageRestriction === "All"
+                    ? "None"
+                    : product.ageRestriction}
                 </span>
               </div>
             </div>
@@ -183,7 +186,7 @@ export default function DetailHero({ product }: DetailHeroProps) {
                 )}
               </div>
               {purchaseType === "rent" ? (
-                (product.priceDetails.rentalPricePerHour ?? 0) > 0 ? (
+                (product.priceDetails.rentalPricePerDay ?? 0) > 0 ? (
                   <>
                     <div className="flex justify-between items-center">
                       <span className="text-white font-medium font-sans">
@@ -192,22 +195,22 @@ export default function DetailHero({ product }: DetailHeroProps) {
                       <span className="text-green-500 font-bold font-serif">
                         <span className="text-sm line-through mr-2 text-red-500">
                           {formatPrice(
-                            product.priceDetails.rentalPricePerHour ?? 0
+                            product.priceDetails.rentalPricePerDay ?? 0
                           )}
-                          /hour
+                          /Day
                         </span>
                         {formatPrice(
-                          (product.priceDetails.rentalPricePerHour ?? 0) -
-                            (product.priceDetails.rentalPricePerHour ?? 0) *
+                          (product.priceDetails.rentalPricePerDay ?? 0) -
+                            (product.priceDetails.rentalPricePerDay ?? 0) *
                               ((product.discountPercentage ?? 0) / 100)
                         )}
-                        /hour
+                        /Day
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <span className="text-white font-sans">
-                        Rental Period (hours):
+                        Rental Period (Days):
                       </span>
                       <input
                         type="number"
@@ -275,27 +278,35 @@ export default function DetailHero({ product }: DetailHeroProps) {
 
             {/* Buttons */}
             <div className="w-full space-y-3">
-              <Button
-                className="flex items-center gap-2 bg-green-600 px-4 py-2 hover:bg-green-700 w-full h-10 sm:h-12 text-sm sm:text-base font-sans tracking-wide"
-                onClick={handleAddToCart}
-              >
-                <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                <span className="text-white">
-                  {(purchaseType === "rent" &&
-                    product.priceDetails.rentalPricePerHour) ??
-                  0 > 0
-                    ? "Save to Rent"
-                    : product.priceDetails.salePrice ?? 0 > 0
-                    ? "Save to Buy"
-                    : "Save to Rent"}
-                </span>
-              </Button>
+              {(purchaseType === "rent" &&
+                product.priceDetails.rentalPricePerDay) ??
+              0 > 0 ? (
+                <DateRangeDialog product={product} />
+              ) : (
+                (purchaseType === "rent" &&
+                  product.priceDetails.rentalPricePerDay) ??
+                (0 > 0 && (
+                  <Button
+                    className="flex items-center gap-2 bg-green-600 px-4 py-2 hover:bg-green-700 w-full h-10 sm:h-12 text-sm sm:text-base font-sans tracking-wide"
+                    onClick={handleAddToCartBuy}
+                  >
+                    <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                    <span className="text-white">Save to Buy</span>
+                  </Button>
+                ))
+              )}
 
               <Button
                 className="flex items-center gap-2 border-2 border-green-600 px-4 py-2 w-full h-10 sm:h-12 text-sm sm:text-base bg-transparent hover:bg-gray-700 font-sans tracking-wide"
                 onClick={handleAddToWishlist}
               >
-                <Heart className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                <Heart
+                  className={`h-4 w-4 sm:h-5 sm:w-5 text-white  ${
+                    isInWishlist
+                      ? "fill-red-500 text-red-500"
+                      : "text-gray-700 hover:text-red-500"
+                  }`}
+                />
                 <span className="text-white">Add to Wishlist</span>
               </Button>
 
@@ -412,7 +423,7 @@ export default function DetailHero({ product }: DetailHeroProps) {
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
                 {/* Rental Details */}
-                {(product.priceDetails.rentalPricePerHour ?? 0) > 0 && (
+                {(product.priceDetails.rentalPricePerDay ?? 0) > 0 && (
                   <div className="bg-zinc-700 p-4 rounded-lg">
                     <h3 className="text-white font-medium mb-2 flex items-center font-serif">
                       <Clock className="w-4 h-4 mr-2" />
@@ -422,21 +433,21 @@ export default function DetailHero({ product }: DetailHeroProps) {
                       <li className="flex justify-between">
                         <span>Minimum Period:</span>
                         <span className="font-mono">
-                          {product.priceDetails.minimumRentalPeriod} hour(s)
+                          {product.priceDetails.minimumRentalPeriod} Day(s)
                         </span>
                       </li>
                       <li className="flex justify-between">
                         <span>Maximum Period:</span>
                         <span className="font-mono">
-                          {product.priceDetails.maximumRentalPeriod} hour(s)
+                          {product.priceDetails.maximumRentalPeriod} Day(s)
                         </span>
                       </li>
                       <li className="flex justify-between">
-                        <span>Price Per Hour:</span>
+                        <span>Price Per Day:</span>
                         <span className="font-serif">
                           {formatPrice(
-                            (product.priceDetails.rentalPricePerHour ?? 0) -
-                              (product.priceDetails.rentalPricePerHour ?? 0) *
+                            (product.priceDetails.rentalPricePerDay ?? 0) -
+                              (product.priceDetails.rentalPricePerDay ?? 0) *
                                 ((product.discountPercentage ?? 0) / 100)
                           )}
                         </span>

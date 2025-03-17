@@ -7,7 +7,8 @@ import CartItems from "./cartDetail";
 
 const CartPage = () => {
   const { data, isLoading } = useGetCartItemsQuery();
-  const cartItems = data?.cartItems || [];
+  const cartItems = data?.cart || [];
+  console.log("cartItem logging....", cartItems);
   const totalPrice = data?.totalPrice ?? 0;
   // const totalQuantity = data?.totalQuantity ?? 0;
 

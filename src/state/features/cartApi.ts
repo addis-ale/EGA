@@ -13,7 +13,7 @@ interface CartProduct extends Product {
 }
 
 interface cartResponse {
-  cartItems: CartProduct[];
+  cart: CartProduct[];
   totalPrice: number;
   totalQuantity: number;
 }
@@ -26,7 +26,7 @@ const calculateRentalPrice = (item: CartProduct): number => {
   const end = new Date(item.rentalEnd);
   const hours = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60)); // Convert ms to hours
 
-  return hours * (item.priceDetails?.rentalPricePerHour || 0);
+  return hours * (item.priceDetails?.rentalPricePerDay || 0);
 };
 
 // Define API for cart operations
@@ -63,12 +63,12 @@ export const cartApi = createApi({
         const patchResult = dispatch(
           cartApi.util.updateQueryData("getCartItems", undefined, (draft) => {
             if (!draft) return;
-            draft.cartItems = draft.cartItems || [];
-            if (!Array.isArray(draft.cartItems)) {
-              draft.cartItems = [];
+            draft.cart = draft.cart || [];
+            if (!Array.isArray(draft.cart)) {
+              draft.cart = [];
             }
 
-            const existingItem = draft.cartItems.find(
+            const existingItem = draft.cart.find(
               (item) =>
                 item.id === productId &&
                 (type === "SALE" ||
@@ -80,7 +80,7 @@ export const cartApi = createApi({
             if (existingItem) {
               existingItem.quantity = (existingItem.quantity || 0) + quantity;
             } else {
-              draft.cartItems.push({
+              draft.cart.push({
                 id: productId,
                 type,
                 quantity,
@@ -132,11 +132,11 @@ export const cartApi = createApi({
       ) {
         const patchResult = dispatch(
           cartApi.util.updateQueryData("getCartItems", undefined, (draft) => {
-            if (!Array.isArray(draft.cartItems)) {
+            if (!Array.isArray(draft.cart)) {
               return;
             }
 
-            const item = draft.cartItems.find((item) => item.id === productId);
+            const item = draft.cart.find((item) => item.id === productId);
 
             if (item) {
               if (quantity !== undefined) {
@@ -181,11 +181,11 @@ export const cartApi = createApi({
       async onQueryStarted({ productId }, { dispatch, queryFulfilled }) {
         const patchResult = dispatch(
           cartApi.util.updateQueryData("getCartItems", undefined, (draft) => {
-            if (!Array.isArray(draft.cartItems)) {
+            if (!Array.isArray(draft.cart)) {
               return;
             }
 
-            const itemToRemove = draft.cartItems.find(
+            const itemToRemove = draft.cart.find(
               (item) => item.id === productId
             );
 
@@ -202,9 +202,7 @@ export const cartApi = createApi({
               }
             }
 
-            draft.cartItems = draft.cartItems.filter(
-              (item) => item.id !== productId
-            );
+            draft.cart = draft.cart.filter((item) => item.id !== productId);
           })
         );
 

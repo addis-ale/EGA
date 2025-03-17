@@ -34,7 +34,7 @@ export const productSchema = z
         .number()
         .min(0, "Sale price must be a positive number")
         .optional(),
-      rentalPricePerHour: z
+      rentalPricePerDay: z
         .number()
         .min(0, "Rental price per hour must be a positive number")
         .optional(),
@@ -58,14 +58,14 @@ export const productSchema = z
     (data) => {
       if (
         data.pricing.salePrice === undefined &&
-        data.pricing.rentalPricePerHour === undefined
+        data.pricing.rentalPricePerDay === undefined
       ) {
         return false;
       }
       return true;
     },
     {
-      message: "Either salePrice or rentalPricePerHour must be provided",
+      message: "Either salePrice or rentalPricePerDay must be provided",
       path: ["pricing"],
     }
   )

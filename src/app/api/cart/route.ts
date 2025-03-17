@@ -185,7 +185,7 @@ export async function GET() {
         );
         return (
           acc +
-          (quantity || 1) * (priceDetails?.rentalPricePerHour || 0) * rentalDays
+          (quantity || 1) * (priceDetails?.rentalPricePerDay || 0) * rentalDays
         );
       }
       return acc;
@@ -216,8 +216,8 @@ export async function DELETE(req: Request) {
     if (!userId)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { cartItemId } = await req.json();
-    await prisma.cartOnProduct.delete({ where: { id: cartItemId } });
+    const { productId } = await req.json();
+    await prisma.cartOnProduct.delete({ where: { id: productId } });
 
     return NextResponse.json(
       { success: true, message: "Item removed from cart" },

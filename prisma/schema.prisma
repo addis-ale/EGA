@@ -79,10 +79,10 @@ model VideoUploaded{
 model PriceDetails {
   id                  String   @id @default(auto()) @map("_id") @db.ObjectId
   productId           String   @unique @db.ObjectId
-  salePrice           Float?   // Sale price (if applicable)
-  rentalPricePerHour  Float?   // Rental price per hour (if applicable)
-  minimumRentalPeriod Int?     // Minimum rental period in hours/days
-  maximumRentalPeriod Int?     // Maximum rental period in hours/days
+  salePrice           Float?   
+  rentalPricePerDay  Float?   
+  minimumRentalPeriod Int?     
+  maximumRentalPeriod Int?     
 
   product            Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }

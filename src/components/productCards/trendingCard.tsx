@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Bungee } from "next/font/google";
 import type { PriceDetails, Product, Review } from "@prisma/client";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { formatPrice, truncateText } from "@/utils/helper";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useGetWishlistQuery } from "@/state/features/whishlistApi";
@@ -62,19 +62,18 @@ export default function ProductListingCard({
 
   const priceDetails = product?.priceDetails;
   const salePrice = priceDetails?.salePrice ?? 0;
-  const rentalPricePerHour = priceDetails?.rentalPricePerHour ?? 0;
+  const rentalPricePerDay = priceDetails?.rentalPricePerDay ?? 0;
 
   const isOnSale = product.productType === "SALE";
   const isRent = product.productType === "RENT";
   const rentandsale = product.productType === "BOTH";
 
+  const pathname = usePathname();
+  const currentPath = pathname.split("/").slice(0, 2).join("/");
   const handleCardClick = () => {
-    const currentLocation = window.location.pathname
-      .split("/")
-      .slice(0, 2)
-      .join("");
-    router.push(`${currentLocation}/product/${product.id}`);
+    router.push(`${currentPath}/product/${product.id}`);
   };
+
   const { handleAddToCart } = useCart();
   const handleSaveToBuy = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -83,7 +82,7 @@ export default function ProductListingCard({
 
   return (
     <Card
-      className="w-full overflow-hidden rounded-xl border shadow-md transition-all duration-300 group relative border-teal hover:border-green-500 hover:shadow-xl"
+      className="w-full overflow-hidden rounded-xl border shadow-md transition-all duration-300 group relative border-teal hover:border-green-500 hover:shadow-xl bg-gray-800"
       onClick={handleCardClick}
     >
       {/* Image section with badges and buttons */}
@@ -192,18 +191,18 @@ export default function ProductListingCard({
               )}
             </div>
           )}
-          {rentalPricePerHour > 0 && (
+          {rentalPricePerDay > 0 && (
             <Badge
               variant="outline"
               className="ml-auto font-normal bg-amber-50 text-amber-800 border-green-600"
             >
               Rental:{" "}
               {formatPrice(
-                (product.priceDetails.rentalPricePerHour ?? 0) -
-                  (product.priceDetails.rentalPricePerHour ?? 0) *
+                (product.priceDetails.rentalPricePerDay ?? 0) -
+                  (product.priceDetails.rentalPricePerDay ?? 0) *
                     (product.discountPercentage / 100)
               )}
-              /Hour
+              /Day
             </Badge>
           )}
         </div>

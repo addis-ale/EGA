@@ -1,15 +1,15 @@
 import { ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGetCartItemsQuery } from "@/state/features/cartApi";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export function CartButton() {
+  const router = useRouter();
   const { data } = useGetCartItemsQuery();
   const totalQuantity =
     data?.cart.reduce((acc, item) => acc + (item.quantity || 0), 0) ?? 0;
-  const router = useRouter();
-  const currentPath = window.location.pathname.split("/").slice(0, 2).join("");
-
+  const pathname = usePathname(); // Get current path
+  const currentPath = pathname.split("/").slice(0, 2).join("/");
   return (
     <Button
       variant="ghost"

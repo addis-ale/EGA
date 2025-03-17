@@ -22,7 +22,7 @@ export async function POST(req: Request, res: Response) {
       productType,
       pricing: {
         salePrice,
-        rentalPricePerHour,
+        rentalPricePerDay,
         minimumRentalPeriod,
         maximumRentalPeriod,
       },
@@ -47,7 +47,7 @@ export async function POST(req: Request, res: Response) {
       data: {
         productId: newProduct.id,
         salePrice,
-        rentalPricePerHour,
+        rentalPricePerDay,
         minimumRentalPeriod,
         maximumRentalPeriod,
       },
@@ -193,7 +193,7 @@ export async function GET(req: Request) {
       const dealProducts = await prisma.product.findMany({
         include: {
           priceDetails: {
-            select: { salePrice: true, rentalPricePerHour: true },
+            select: { salePrice: true, rentalPricePerDay: true },
           },
           uploadedVideo: true,
           reviews: true,

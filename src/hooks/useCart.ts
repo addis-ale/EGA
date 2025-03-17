@@ -4,6 +4,7 @@ import { Product } from "@prisma/client";
 import {
   useAddToCartMutation,
   useRemoveFromCartMutation,
+  useUpdateCartItemMutation,
   useGetCartItemsQuery,
 } from "@/state/features/cartApi";
 import { useToast } from "./use-toast";
@@ -12,11 +13,12 @@ export const useCart = () => {
   const { toast } = useToast();
   const [addToCart] = useAddToCartMutation();
   const [removeFromCart] = useRemoveFromCartMutation();
+  const [updateCartItem] = useUpdateCartItemMutation();
   const { refetch } = useGetCartItemsQuery();
 
   // Handle Cart Error
   const handleCartError = useCallback(
-    (error: unknown, action: "add" | "remove") => {
+    (error: unknown, action: "add" | "remove" | "update") => {
       if ("status" in (error as FetchBaseQueryError)) {
         const err = error as FetchBaseQueryError;
         switch (err.status) {
@@ -74,10 +76,7 @@ export const useCart = () => {
         toast({
           title: "Added to Cart",
           description: `You added ${quantity} ${product.productName} to your cart.`,
-          style: {
-            backgroundColor: "green",
-            color: "white",
-          },
+          style: { backgroundColor: "green", color: "white" },
         });
       } catch (error) {
         handleCartError(error, "add");
@@ -96,10 +95,7 @@ export const useCart = () => {
         toast({
           title: "Removed from Cart",
           description: "Product has been removed from your cart.",
-          style: {
-            backgroundColor: "red",
-            color: "white",
-          },
+          style: { backgroundColor: "red", color: "white" },
         });
       } catch (error) {
         handleCartError(error, "remove");
@@ -108,5 +104,34 @@ export const useCart = () => {
     [removeFromCart, toast, refetch, handleCartError]
   );
 
-  return { handleAddToCart, handleRemoveFromCart };
+  // **Update Cart Item (Quantity, Rental Start & End Dates)**
+  const handleUpdateCartItem = useCallback(
+    async (
+      productId: string,
+      quantity?: number,
+      rentalStart?: Date,
+      rentalEnd?: Date
+    ) => {
+      try {
+        await updateCartItem({
+          productId,
+          quantity,
+          rentalStart: rentalStart?.toISOString(),
+          rentalEnd: rentalEnd?.toISOString(),
+        }).unwrap();
+        refetch();
+
+        toast({
+          title: "Cart Updated",
+          description: "Your cart item has been updated successfully.",
+          style: { backgroundColor: "blue", color: "white" },
+        });
+      } catch (error) {
+        handleCartError(error, "update");
+      }
+    },
+    [updateCartItem, toast, refetch, handleCartError]
+  );
+
+  return { handleAddToCart, handleRemoveFromCart, handleUpdateCartItem };
 };
