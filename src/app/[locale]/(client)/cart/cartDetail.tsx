@@ -464,7 +464,7 @@ const CartItems = ({ cartItems }: CartItemsProps) => {
                         ) : (
                           <div className="text-right">
                             <div className="text-sm text-muted-foreground mb-1">
-                              {formatPrice(item.priceDetails.salePrice)} ×{" "}
+                              {formatPrice(item.priceDetails.salePrice ?? 0)} ×{" "}
                               {quantities[item.id]}
                               {item.product.discountPercentage > 0 &&
                                 ` (-${item.product.discountPercentage}%)`}
