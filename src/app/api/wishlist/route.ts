@@ -76,7 +76,9 @@ export async function GET() {
       include: {
         wishlists: {
           include: {
-            product: true,
+            product: {
+              include: { priceDetails: true, reviews: true },
+            },
           },
         },
       },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useGetAllProductsQuery } from "@/state/features/productApi";
 import type { PriceDetails, Product, Review } from "@prisma/client";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,7 +9,6 @@ import TrendingCard from "@/components/productCards/trendingCard";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Filter,
   X,
   Star,
   TrendingUp,
@@ -43,6 +42,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { useSearchParams } from "next/navigation";
 
 interface ProductProps {
   product: Product & {
@@ -52,6 +52,8 @@ interface ProductProps {
 }
 
 export default function FilterPage() {
+  const searchParams = useSearchParams();
+  console.log("Search Keyword", searchParams.get("keyword"));
   const formatProductData = (products: any) =>
     products?.map((product: any) => ({
       ...product,
@@ -63,9 +65,11 @@ export default function FilterPage() {
   const { data, isLoading } = useGetAllProductsQuery({});
   const [products, setProducts] = useState<any[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
   const [isFiltering, setIsFiltering] = useState(false);
   const [sortOption, setSortOption] = useState("newest");
+  const [searchKeyword, setSearchKeyword] = useState<string | null>(
+    searchParams.get("keyword")
+  );
 
   // Filter states
   const [selectedPriceRanges, setSelectedPriceRanges] = useState<string[]>([]);
@@ -101,7 +105,7 @@ export default function FilterPage() {
   ];
 
   // Define age restrictions
-  const predefinedAgeRestrictions = ["13+", "15+", "18+", "All"];
+  const predefinedAgeRestrictions = ["13+", "15+", "18+", "None"];
 
   // Define sort options
   const sortOptions = [
@@ -119,30 +123,6 @@ export default function FilterPage() {
     }
   }, [data]);
 
-  useEffect(() => {
-    if (products.length > 0) {
-      setIsFiltering(true);
-
-      // Use setTimeout to show the filtering state for at least a short moment
-      const timeoutId = setTimeout(() => {
-        applyFilters();
-        setIsFiltering(false);
-      }, 300);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [
-    selectedPriceRanges,
-    selectedGameTypes,
-    selectedProductTypes,
-    selectedAgeRestrictions,
-    showDiscounted,
-    showTopRated,
-    showTrending,
-    sortOption,
-    products,
-  ]);
-
   // Helper function to calculate the actual price after discount
   const calculateDiscountedPrice = (
     rawPrice: number,
@@ -152,12 +132,22 @@ export default function FilterPage() {
     return rawPrice - rawPrice * (discountPercentage / 100);
   };
 
-  // Update the applyFilters function to handle different price fields based on product type
-  // and apply discount percentages
-  const applyFilters = () => {
+  // Memoize the applyFilters function with useCallback
+  const applyFilters = useCallback(() => {
     if (!products.length) return;
 
     let result = [...products];
+
+    // Apply keyword search filter
+    if (searchKeyword && searchKeyword.trim() !== "") {
+      const keyword = searchKeyword.toLowerCase().trim();
+      result = result.filter(
+        (product) =>
+          product.productName?.toLowerCase().includes(keyword) ||
+          product.productDescription?.toLowerCase().includes(keyword) ||
+          product.gameType?.toLowerCase().includes(keyword)
+      );
+    }
 
     // Apply price range filter
     if (selectedPriceRanges.length > 0) {
@@ -256,7 +246,44 @@ export default function FilterPage() {
     // "newest" is default, no additional sorting needed
 
     setFilteredProducts(result);
-  };
+  }, [
+    products,
+    searchKeyword,
+    selectedPriceRanges,
+    selectedGameTypes,
+    selectedProductTypes,
+    selectedAgeRestrictions,
+    showDiscounted,
+    showTopRated,
+    showTrending,
+    sortOption,
+  ]);
+
+  useEffect(() => {
+    if (products.length > 0) {
+      setIsFiltering(true);
+
+      // Use setTimeout to show the filtering state for at least a short moment
+      const timeoutId = setTimeout(() => {
+        applyFilters();
+        setIsFiltering(false);
+      }, 300);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [
+    selectedPriceRanges,
+    selectedGameTypes,
+    selectedProductTypes,
+    selectedAgeRestrictions,
+    showDiscounted,
+    showTopRated,
+    showTrending,
+    sortOption,
+    products,
+    searchKeyword,
+    applyFilters,
+  ]);
 
   const resetFilters = () => {
     setSelectedPriceRanges([]);
@@ -267,6 +294,7 @@ export default function FilterPage() {
     setShowTopRated(false);
     setShowTrending(false);
     setSortOption("newest");
+    setSearchKeyword("");
   };
 
   const togglePriceRange = (rangeId: string) => {
@@ -521,10 +549,23 @@ export default function FilterPage() {
       </Accordion>
 
       {/* Active Filters */}
-      {hasActiveFilters && (
+      {(hasActiveFilters || searchKeyword) && (
         <div className="mt-6 p-3 bg-muted/30 rounded-lg border border-border">
           <h3 className="text-sm font-medium mb-2">Active Filters:</h3>
           <div className="flex flex-wrap gap-2">
+            {searchKeyword && (
+              <Badge
+                variant="secondary"
+                className="flex items-center gap-1 bg-primary/20 text-primary-foreground"
+              >
+                Search: {searchKeyword}
+                <X
+                  className="h-3 w-3 cursor-pointer hover:text-destructive"
+                  onClick={() => setSearchKeyword("")}
+                />
+              </Badge>
+            )}
+
             {selectedPriceRanges.map((rangeId) => {
               const range = priceRanges.find((r) => r.id === rangeId);
               return range ? (
@@ -633,6 +674,10 @@ export default function FilterPage() {
     </div>
   );
 
+  useEffect(() => {
+    setSearchKeyword(searchParams.get("keyword"));
+  }, [searchParams]);
+
   return (
     <Container>
       <div className="min-h-screen mt-20 text-primary bg-background rounded-lg p-4 md:p-6 w-full dark">
@@ -640,6 +685,8 @@ export default function FilterPage() {
         <div className="flex flex-col gap-4 mb-6">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold">Products</h1>
+
+            {/* Search Input */}
 
             {/* Mobile Filter Button - Sheet Component */}
             <Sheet>
@@ -666,6 +713,8 @@ export default function FilterPage() {
               </SheetContent>
             </Sheet>
           </div>
+
+          {/* Mobile Search Input */}
 
           {/* Results count and sorting */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card/30 p-4 rounded-lg border border-border">

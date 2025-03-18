@@ -14,7 +14,7 @@ export function CartButton() {
     <Button
       variant="ghost"
       size="icon"
-      className="relative text-white hover:bg-gray-300"
+      className="relative text-white hover:bg-gray-500"
       onClick={() => router.push(`${currentPath}/cart`)}
     >
       <ShoppingCart className="h-6 w-6 sm:h-8 sm:w-8" />

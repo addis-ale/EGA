@@ -17,6 +17,7 @@ import { CartButton } from "./navbar/cart-button";
 import CustomeDropDown from "./customeDropDown";
 import { RootState } from "@/state/store";
 import Container from "./container";
+import { WishlistButton } from "./navbar/wishList-btn";
 
 export function NavBar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -72,7 +73,10 @@ function DesktopNavigation({
         />
         <div className="flex items-center gap-4">
           <LanguageSelector />
-          <CartButton />
+          <div className="flex gap-4 items-center">
+            <CartButton />
+            <WishlistButton />
+          </div>
         </div>
       </div>
     </div>

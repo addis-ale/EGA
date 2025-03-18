@@ -1,12 +1,15 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { Product } from "@prisma/client";
-
+import { PriceDetails, Product, Review } from "@prisma/client";
+interface WishlistProduct extends Product {
+  priceDetails: PriceDetails;
+  reviews: Review[];
+}
 export const wishlistApi = createApi({
   reducerPath: "wishlistApi",
   baseQuery: fetchBaseQuery({ baseUrl: "/api" }),
   tagTypes: ["Wishlist"],
   endpoints: (builder) => ({
-    getWishlist: builder.query<{ wishlist: Product[] }, void>({
+    getWishlist: builder.query<{ wishlist: WishlistProduct[] }, void>({
       query: () => ({ url: "/wishlist", method: "GET" }),
       providesTags: ["Wishlist"],
     }),
@@ -35,7 +38,7 @@ export const wishlistApi = createApi({
               if (index !== -1) {
                 draft.wishlist.splice(index, 1); // Remove existing product
               } else {
-                draft.wishlist.push({ id: productId } as Product); // Add new product
+                draft.wishlist.push({ id: productId } as WishlistProduct); // Add new product
               }
             }
           )
