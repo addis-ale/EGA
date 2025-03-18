@@ -209,16 +209,17 @@ export default function ProductListingCard({
 
         {/* Action buttons */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <Button
-            className="flex items-center justify-center gap-1 bg-shadGray/95 hover:bg-shadGray text-primary-foreground text-xs sm:text-sm"
-            onClick={handleSaveToBuy}
-          >
-            <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 " />
-            <span className="hidden xs:inline">Save to buy</span>
-            <span className="xs:hidden">Save to buy</span>
-          </Button>
-
-          <DateRangeDialog product={product} />
+          {salePrice > 0 && (
+            <Button
+              className="flex items-center justify-center gap-1 bg-shadGray/95 hover:bg-shadGray text-primary-foreground text-xs sm:text-sm"
+              onClick={handleSaveToBuy}
+            >
+              <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4 " />
+              <span className="hidden xs:inline">Save to buy</span>
+              <span className="xs:hidden">Save to buy</span>
+            </Button>
+          )}
+          {rentalPricePerDay && <DateRangeDialog product={product} />}
         </div>
       </div>
     </Card>

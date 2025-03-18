@@ -147,6 +147,12 @@ const CartItems = ({ cartItems }: CartItemsProps) => {
 
   const saveDateChanges = (id: string) => {
     // Here you would typically call an API to update the rental dates
+    handleUpdateCartItem(
+      id,
+      quantities[id],
+      rentalDates[id].start,
+      rentalDates[id].end
+    );
     console.log("Saving date changes for item:", id, rentalDates[id]);
     toggleEditDates(id);
   };
@@ -173,13 +179,26 @@ const CartItems = ({ cartItems }: CartItemsProps) => {
   // Calculate the new total price based on current quantities and rental dates
   const calculateTotalPrice = () => {
     return cartItems.reduce((total, item) => {
-      const rentalDays = calculateDays(
-        rentalDates[item.id].start,
-        rentalDates[item.id].end
-      );
-      const itemTotal =
-        item.priceDetails.rentalPricePerDay * rentalDays * quantities[item.id];
-      return total + itemTotal;
+      const discountMultiplier = 1 - item.product.discountPercentage / 100;
+
+      if (item.type === "RENT") {
+        const rentalDays = calculateDays(
+          rentalDates[item.id].start,
+          rentalDates[item.id].end
+        );
+        const basePrice =
+          item.priceDetails.rentalPricePerDay *
+          rentalDays *
+          quantities[item.id];
+        const discountedPrice = basePrice * discountMultiplier;
+        return total + discountedPrice;
+      } else {
+        // For BUY items, use salePrice with discount
+        const basePrice =
+          (item.priceDetails.salePrice || 0) * quantities[item.id];
+        const discountedPrice = basePrice * discountMultiplier;
+        return total + discountedPrice;
+      }
     }, 0);
   };
 
@@ -187,11 +206,11 @@ const CartItems = ({ cartItems }: CartItemsProps) => {
 
   return (
     <div className="w-full max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row gap-8 mt-[100px]">
+      <div className="flex flex-col md:flex-row gap-8 mt-[100px] items-start">
         {/* Cart Items Section */}
         <div className="flex-1">
           <div className="flex items-center mb-6">
-            <ShoppingCartIcon className="mr-2 h-6 w-6 text-primary" />
+            <ShoppingCartIcon className="mr-2 h-6 w-6 text-primary text-teal" />
             <h1 className="text-2xl font-bold text-white">Your Cart</h1>
             <Badge variant="outline" className="ml-2 text-white">
               {cartItems.length} {cartItems.length === 1 ? "item" : "items"}
@@ -204,10 +223,17 @@ const CartItems = ({ cartItems }: CartItemsProps) => {
                 rentalDates[item.id].start,
                 rentalDates[item.id].end
               );
-              const itemTotal =
-                item.priceDetails.rentalPricePerDay *
-                rentalDays *
-                quantities[item.id];
+              const discountMultiplier =
+                1 - item.product.discountPercentage / 100;
+
+              const baseTotal =
+                item.type === "RENT"
+                  ? item.priceDetails.rentalPricePerDay *
+                    rentalDays *
+                    quantities[item.id]
+                  : (item.priceDetails.salePrice || 0) * quantities[item.id];
+
+              const itemTotal = baseTotal * discountMultiplier;
 
               return (
                 <Card
@@ -254,119 +280,128 @@ const CartItems = ({ cartItems }: CartItemsProps) => {
                             </Badge>
                           </div>
 
-                          <div className="flex items-center text-sm mb-4">
-                            {!editingDates[item.id] ? (
-                              <>
-                                <CalendarIcon className="h-4 w-4 mr-1 text-muted-foreground" />
-                                <span className=" text-white">
-                                  {formatDate(rentalDates[item.id].start)} -{" "}
-                                  {formatDate(rentalDates[item.id].end)}
-                                </span>
-                                <Badge
-                                  variant="outline"
-                                  className="ml-2 text-teal"
-                                >
-                                  {rentalDays}{" "}
-                                  {rentalDays === 1 ? "day" : "days"}
-                                </Badge>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 ml-2"
-                                  onClick={() => toggleEditDates(item.id)}
-                                >
-                                  <PencilIcon className="h-3 w-3 text-white" />
-                                </Button>
-                              </>
-                            ) : (
-                              <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-                                <div className="flex items-center gap-2">
-                                  <div className="grid gap-1">
-                                    <div className="text-xs font-medium text-teal">
-                                      Start Date
-                                    </div>
-                                    <Popover>
-                                      <PopoverTrigger asChild>
-                                        <Button
-                                          variant="outline"
-                                          className="w-[140px] justify-start text-left font-normal"
-                                          size="sm"
+                          {item.type === "RENT" && (
+                            <div className="flex items-center text-sm mb-4">
+                              {!editingDates[item.id] ? (
+                                <>
+                                  <CalendarIcon className="h-4 w-4 mr-1 text-muted-foreground" />
+                                  <span className=" text-white">
+                                    {formatDate(rentalDates[item.id].start)} -{" "}
+                                    {formatDate(rentalDates[item.id].end)}
+                                  </span>
+                                  <Badge
+                                    variant="outline"
+                                    className="ml-2 text-teal"
+                                  >
+                                    {rentalDays}{" "}
+                                    {rentalDays === 1 ? "day" : "days"}
+                                  </Badge>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 ml-2"
+                                    onClick={() => toggleEditDates(item.id)}
+                                  >
+                                    <PencilIcon className="h-3 w-3 text-white" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                                  <div className="flex items-center gap-2">
+                                    <div className="grid gap-1">
+                                      <div className="text-xs font-medium text-teal">
+                                        Start Date
+                                      </div>
+                                      <Popover>
+                                        <PopoverTrigger asChild>
+                                          <Button
+                                            variant="outline"
+                                            className="w-[140px] justify-start text-left font-normal"
+                                            size="sm"
+                                          >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {formatDate(
+                                              rentalDates[item.id].start
+                                            )}
+                                          </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent
+                                          className="w-auto p-0"
+                                          align="start"
                                         >
-                                          <CalendarIcon className="mr-2 h-4 w-4" />
-                                          {formatDate(
-                                            rentalDates[item.id].start
-                                          )}
-                                        </Button>
-                                      </PopoverTrigger>
-                                      <PopoverContent
-                                        className="w-auto p-0"
-                                        align="start"
-                                      >
-                                        <Calendar
-                                          mode="single"
-                                          selected={rentalDates[item.id].start}
-                                          onSelect={(date) =>
-                                            handleStartDateChange(item.id, date)
-                                          }
-                                          initialFocus
-                                        />
-                                      </PopoverContent>
-                                    </Popover>
+                                          <Calendar
+                                            mode="single"
+                                            selected={
+                                              rentalDates[item.id].start
+                                            }
+                                            onSelect={(date) =>
+                                              handleStartDateChange(
+                                                item.id,
+                                                date
+                                              )
+                                            }
+                                            initialFocus
+                                          />
+                                        </PopoverContent>
+                                      </Popover>
+                                    </div>
+
+                                    <div className="grid gap-1">
+                                      <div className="text-xs font-medium text-teal">
+                                        End Date
+                                      </div>
+                                      <Popover>
+                                        <PopoverTrigger asChild>
+                                          <Button
+                                            variant="outline"
+                                            className="w-[140px] justify-start text-left font-normal"
+                                            size="sm"
+                                          >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {formatDate(
+                                              rentalDates[item.id].end
+                                            )}
+                                          </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent
+                                          className="w-auto p-0"
+                                          align="start"
+                                        >
+                                          <Calendar
+                                            mode="single"
+                                            selected={rentalDates[item.id].end}
+                                            onSelect={(date) =>
+                                              handleEndDateChange(item.id, date)
+                                            }
+                                            initialFocus
+                                          />
+                                        </PopoverContent>
+                                      </Popover>
+                                    </div>
                                   </div>
 
-                                  <div className="grid gap-1">
-                                    <div className="text-xs font-medium text-teal">
-                                      End Date
-                                    </div>
-                                    <Popover>
-                                      <PopoverTrigger asChild>
-                                        <Button
-                                          variant="outline"
-                                          className="w-[140px] justify-start text-left font-normal"
-                                          size="sm"
-                                        >
-                                          <CalendarIcon className="mr-2 h-4 w-4" />
-                                          {formatDate(rentalDates[item.id].end)}
-                                        </Button>
-                                      </PopoverTrigger>
-                                      <PopoverContent
-                                        className="w-auto p-0"
-                                        align="start"
-                                      >
-                                        <Calendar
-                                          mode="single"
-                                          selected={rentalDates[item.id].end}
-                                          onSelect={(date) =>
-                                            handleEndDateChange(item.id, date)
-                                          }
-                                          initialFocus
-                                        />
-                                      </PopoverContent>
-                                    </Popover>
+                                  <div className="flex gap-1 mt-1 sm:mt-0">
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-8 w-8 rounded-full bg-green-500/10 text-green-500 hover:bg-green-500/20 hover:text-green-600"
+                                      onClick={() => saveDateChanges(item.id)}
+                                    >
+                                      <CheckIcon className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-8 w-8 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-600"
+                                      onClick={() => cancelDateChanges(item.id)}
+                                    >
+                                      <XIcon className="h-4 w-4" />
+                                    </Button>
                                   </div>
                                 </div>
-
-                                <div className="flex gap-1 mt-1 sm:mt-0">
-                                  <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-8 w-8 rounded-full bg-green-500/10 text-green-500 hover:bg-green-500/20 hover:text-green-600"
-                                    onClick={() => saveDateChanges(item.id)}
-                                  >
-                                    <CheckIcon className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-8 w-8 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-600"
-                                    onClick={() => cancelDateChanges(item.id)}
-                                  >
-                                    <XIcon className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         <Button
@@ -414,15 +449,31 @@ const CartItems = ({ cartItems }: CartItemsProps) => {
                           </Button>
                         </div>
 
-                        <div className="text-right">
-                          <div className="text-sm text-muted-foreground mb-1">
-                            ${item.priceDetails.rentalPricePerDay} ×{" "}
-                            {rentalDays} days × {quantities[item.id]}
+                        {item.type === "RENT" ? (
+                          <div className="text-right">
+                            <div className="text-sm text-muted-foreground mb-1">
+                              {formatPrice(item.priceDetails.rentalPricePerDay)}{" "}
+                              × {rentalDays} days × {quantities[item.id]}
+                              {item.product.discountPercentage > 0 &&
+                                ` (-${item.product.discountPercentage}%)`}
+                            </div>
+                            <div className="text-xl font-bold text-teal">
+                              {formatPrice(itemTotal)}
+                            </div>
                           </div>
-                          <div className="text-xl font-bold text-teal">
-                            {formatPrice(itemTotal)}
+                        ) : (
+                          <div className="text-right">
+                            <div className="text-sm text-muted-foreground mb-1">
+                              {formatPrice(item.priceDetails.salePrice)} ×{" "}
+                              {quantities[item.id]}
+                              {item.product.discountPercentage > 0 &&
+                                ` (-${item.product.discountPercentage}%)`}
+                            </div>
+                            <div className="text-xl font-bold text-teal">
+                              {formatPrice(itemTotal)}
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -433,7 +484,7 @@ const CartItems = ({ cartItems }: CartItemsProps) => {
         </div>
 
         {/* Order Summary Section */}
-        <div className="w-full md:w-1/3">
+        <div className="w-full md:w-1/3 mt-14">
           <Card className="sticky top-24 bg-gray-800 text-white">
             <div className="p-6">
               <h2 className="text-xl font-bold mb-4 text-teal">
@@ -442,24 +493,54 @@ const CartItems = ({ cartItems }: CartItemsProps) => {
 
               <div className="space-y-3 mb-6">
                 {cartItems.map((item) => {
-                  const rentalDays = calculateDays(
-                    rentalDates[item.id].start,
-                    rentalDates[item.id].end
-                  );
-                  const itemTotal =
-                    item.priceDetails.rentalPricePerDay *
-                    rentalDays *
-                    quantities[item.id];
+                  const discountMultiplier =
+                    1 - item.product.discountPercentage / 100;
+                  let baseTotal, itemTotal;
 
-                  return (
-                    <div key={item.id} className="flex justify-between text-sm">
-                      <span className="capitalize">
-                        {item.product.productName} ({quantities[item.id]} ×{" "}
-                        {rentalDays} days)
-                      </span>
-                      <span>${itemTotal.toFixed(2)}</span>
-                    </div>
-                  );
+                  if (item.type === "RENT") {
+                    const rentalDays = calculateDays(
+                      rentalDates[item.id].start,
+                      rentalDates[item.id].end
+                    );
+                    baseTotal =
+                      item.priceDetails.rentalPricePerDay *
+                      rentalDays *
+                      quantities[item.id];
+                    itemTotal = baseTotal * discountMultiplier;
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex justify-between text-sm"
+                      >
+                        <span className="capitalize">
+                          {item.product.productName} ({quantities[item.id]} ×{" "}
+                          {rentalDays} days)
+                          {item.product.discountPercentage > 0 &&
+                            ` (-${item.product.discountPercentage}%)`}
+                        </span>
+                        <span>{formatPrice(itemTotal)}</span>
+                      </div>
+                    );
+                  } else {
+                    baseTotal =
+                      (item.priceDetails.salePrice || 0) * quantities[item.id];
+                    itemTotal = baseTotal * discountMultiplier;
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex justify-between text-sm"
+                      >
+                        <span className="capitalize">
+                          {item.product.productName} ({quantities[item.id]})
+                          {item.product.discountPercentage > 0 &&
+                            ` (-${item.product.discountPercentage}%)`}
+                        </span>
+                        <span>{formatPrice(itemTotal)}</span>
+                      </div>
+                    );
+                  }
                 })}
               </div>
 
@@ -467,7 +548,7 @@ const CartItems = ({ cartItems }: CartItemsProps) => {
 
               <div className="flex justify-between mb-2">
                 <span>Subtotal</span>
-                <span>${newTotalPrice.toFixed(2)}</span>
+                <span>{formatPrice(newTotalPrice)}</span>
               </div>
 
               <div className="flex justify-between text-muted-foreground text-sm mb-6">
@@ -479,7 +560,7 @@ const CartItems = ({ cartItems }: CartItemsProps) => {
 
               <div className="flex justify-between font-bold text-lg mb-6">
                 <span>Total</span>
-                <span>${newTotalPrice.toFixed(2)}</span>
+                <span>{formatPrice(newTotalPrice)}</span>
               </div>
 
               <Button
