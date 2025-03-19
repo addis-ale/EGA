@@ -71,7 +71,7 @@ export default function ProductListingCard({
   const pathname = usePathname();
   const currentPath = pathname.split("/").slice(0, 2).join("/");
   const handleCardClick = () => {
-    router.push(`${currentPath}/product/${product.id}`);
+    router.replace(`${currentPath}/product/${product.id}`);
   };
 
   const { handleAddToCart } = useCart();

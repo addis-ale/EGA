@@ -1,8 +1,7 @@
 "use client";
 
 import GameSubcategorySelector from "@/components/clientComponents/subCategorySelector";
-import ProductListingCard from "@/components/productCards/trendingCard";
-import { useToast } from "@/hooks/use-toast";
+import TrendingCard from "@/components/productCards/trendingCard";
 import { useGetAllProductsQuery } from "@/state/features/productApi";
 import { PriceDetails, Product, Review, VideoUploaded } from "@prisma/client";
 import { useState } from "react";
@@ -27,25 +26,10 @@ const ensureProductType = (product: any): ProductType => {
 
 export default function SubCategory() {
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
-  const { toast } = useToast();
   const { data: products } = useGetAllProductsQuery({
     gameTypeFilter: selectedCategory,
   });
   const filteredProducts = products?.products.map(ensureProductType);
-
-  const handleAddToCart = (productId: string) => {
-    toast({
-      title: "Added to cart",
-      description: `Product ID: ${productId} has been added to your cart.`,
-    });
-  };
-
-  const handleRentNow = (productId: string) => {
-    toast({
-      title: "Rent Now",
-      description: `You're about to rent Product ID: ${productId}.`,
-    });
-  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -57,12 +41,7 @@ export default function SubCategory() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredProducts &&
           filteredProducts.map((product) => (
-            <ProductListingCard
-              key={product.id}
-              product={product}
-              onAddToCart={handleAddToCart}
-              onRentNow={handleRentNow}
-            />
+            <TrendingCard key={product.id} product={product} />
           ))}
       </div>
 
