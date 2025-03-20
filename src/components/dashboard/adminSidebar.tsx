@@ -1,3 +1,4 @@
+"use client";
 import {
   BarChart,
   Package,
@@ -19,6 +20,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 // Menu items.
 const items = [
@@ -60,10 +62,12 @@ const items = [
   },
 ];
 export function AdminSidebar() {
+  const pathName = usePathname();
+  const currentPath = pathName.split("/").slice(0, 2).join("/");
   return (
     <div>
       <Sidebar>
-        <SidebarContent>
+        <SidebarContent className="bg-black text-white">
           <SidebarGroup className="gap-8 px-6 py-8">
             <SidebarGroupLabel className="text-2xl font-bold">
               EGA Store
@@ -73,7 +77,7 @@ export function AdminSidebar() {
                 {items.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
-                      <Link href={item.url} passHref>
+                      <Link href={`${currentPath}/${item.url}`} passHref>
                         <item.icon />
                         <span className="md">{item.title}</span>
                       </Link>

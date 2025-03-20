@@ -71,7 +71,6 @@ export const useCart = () => {
           rentalStart: rentalStart?.toISOString(),
           rentalEnd: rentalEnd?.toISOString(),
         }).unwrap();
-        refetch();
 
         toast({
           title: "Added to Cart",
@@ -82,7 +81,7 @@ export const useCart = () => {
         handleCartError(error, "add");
       }
     },
-    [addToCart, toast, refetch, handleCartError]
+    [addToCart, toast, handleCartError]
   );
 
   // Remove from Cart

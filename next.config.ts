@@ -3,7 +3,7 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ["example.com", "images.unsplash.com"],
+    domains: ["example.com", "images.unsplash.com", "res.cloudinary.com"],
   },
   // next.config.js
 

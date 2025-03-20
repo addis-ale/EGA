@@ -47,9 +47,6 @@ export function SearchBar() {
   useEffect(() => {
     if (!pathname.includes("/filter")) {
       setSearchQuery(""); // Clear state
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("keyword"); // Remove from URL
-      router.replace(`${currentPath}?${params.toString()}`);
     }
   }, [pathname, router, searchParams, currentPath]);
 

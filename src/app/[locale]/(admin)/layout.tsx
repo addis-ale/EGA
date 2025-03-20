@@ -4,10 +4,10 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-white">
-      <SidebarProvider>
+      <SidebarProvider className="bg-black">
         <AdminSidebar />
-        <SidebarTrigger />
-        <main className="flex items-center justify-center mx-auto my-auto max-w-4xl min-h-screen">
+        <SidebarTrigger className="text-teal" />
+        <main className="flex items-center justify-center mx-auto my-auto w-full min-h-screen bg-black">
           {children}
         </main>
       </SidebarProvider>
