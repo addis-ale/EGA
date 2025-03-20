@@ -12,7 +12,6 @@ import {
 import { logout } from "@/state/features/currentUserSlice";
 import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-
 import { useDispatch } from "react-redux";
 
 interface SignoutModalProps {
@@ -22,12 +21,20 @@ interface SignoutModalProps {
 export function SignoutModal({ onClose }: SignoutModalProps) {
   const dispatch = useDispatch();
   const router = useRouter();
+
   const handleSignout = async () => {
-    await signOut({ redirect: false });
+    onClose(); // Close modal immediately for better UX
+
+    // Clear Redux state immediately
     dispatch(logout());
 
-    onClose();
-    router.push("/");
+    // Manually clear session cookie (if applicable)
+    document.cookie =
+      "next-auth.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+    // Sign out and redirect
+    await signOut({ redirect: false });
+    router.replace("/"); // Use replace() to avoid navigation flickering
   };
 
   return (

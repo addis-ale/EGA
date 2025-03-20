@@ -1,7 +1,6 @@
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import { persistStore, persistReducer } from "redux-persist";
 import storage from "redux-persist/lib/storage"; // Defaults to localStorage for web
-import createPostReducer from "./features/createPostSlice"; // Your persisted slice
 import currentUserState from "./features/currentUserSlice"; // User state slice
 import { productApi } from "./features/productApi";
 import { wishlistApi } from "./features/whishlistApi";
@@ -17,7 +16,6 @@ const persistConfig = {
 
 // Combine reducers
 const rootReducer = combineReducers({
-  createPost: createPostReducer, // Persisted reducer
   currentUser: currentUserState, // Persisted reducer
   [productApi.reducerPath]: productApi.reducer,
   [wishlistApi.reducerPath]: wishlistApi.reducer,
@@ -33,13 +31,13 @@ export const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, // Disable serializability check for redux-persist
+      serializableCheck: false,
     }).concat(
       productApi.middleware,
       wishlistApi.middleware,
       cartApi.middleware,
       FilterApi.middleware
-    ), // Add both middlewares
+    ),
 });
 
 // Persistor for the store

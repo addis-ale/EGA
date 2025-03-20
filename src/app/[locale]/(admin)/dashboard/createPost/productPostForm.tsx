@@ -42,6 +42,8 @@ import {
 } from "@/components/ui/command";
 import ProductPreview from "./productPreview";
 import Image from "next/image";
+import { useCreateProductMutation } from "@/state/features/productApi";
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z
   .object({
@@ -183,16 +185,31 @@ export default function ProductPostForm() {
   });
 
   const productType = form.watch("productType");
+  const [createProduct] = useCreateProductMutation();
+  const { toast } = useToast();
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+      setIsSubmitting(true); // Show loading state
+      console.log("Submitting:", values);
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsSubmitting(true);
+      await createProduct(values).unwrap(); // Await API call
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log(values);
-      setIsSubmitting(false);
-      alert("Product post created successfully!");
-    }, 1500);
+      toast({
+        title: "Product Created",
+        description: "Your product has been successfully listed!",
+        style: {
+          backgroundColor: "green",
+          color: "white",
+          padding: "10px 20px",
+          borderRadius: "8px",
+        },
+      });
+    } catch (err) {
+      console.log("Error:", err);
+      // Handle API error (e.g., show toast notification)
+    } finally {
+      setIsSubmitting(false); // Reset loading state
+    }
   }
 
   const nextStep = async () => {
@@ -1016,7 +1033,8 @@ export default function ProductPostForm() {
                     </Button>
                   ) : (
                     <Button
-                      type="submit"
+                      type="button"
+                      onClick={form.handleSubmit(onSubmit)}
                       disabled={isSubmitting}
                       className="bg-teal hover:bg-teal text-white"
                     >
