@@ -40,11 +40,12 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import ProductPreview from "./productPreview";
 import Image from "next/image";
-import { useCreateProductMutation } from "@/state/features/productApi";
+import { useUpdateProductMutation } from "@/state/features/productApi";
 import { useToast } from "@/hooks/use-toast";
+import ProductPreview from "../../createpost/productPreview";
 import { productSchema } from "@/schemas/productSchema";
+import { PriceDetails, Product, Review, VideoUploaded } from "@prisma/client";
 
 const ageRestrictions = ["None", "13+", "15+", "18+"];
 
@@ -68,134 +69,65 @@ const formSteps = [
   { id: "media", title: "Media & Videos" },
   { id: "review", title: "Review & Submit" },
 ];
-
-export default function ProductPostForm() {
+interface GameProduct extends Product {
+  priceDetails: PriceDetails;
+  uploadedVideo: VideoUploaded[];
+  reviews: Review[];
+}
+export interface ProductProp {
+  singleProduct: GameProduct;
+}
+export default function ProductUpdateForm({ singleProduct }: ProductProp) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("form");
   const [ageOpen, setAgeOpen] = useState(false);
   const [gameTypeOpen, setGameTypeOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+
   const form = useForm<z.infer<typeof productSchema>>({
-    resolver: zodResolver(
-      productSchema.superRefine((data, ctx) => {
-        // Validate age restriction is required
-        if (!data.ageRestriction) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Age restriction is required",
-            path: ["ageRestriction"],
-          });
-        }
-
-        // Validate based on product type
-        if (data.productType === "SALE" || data.productType === "BOTH") {
-          if (
-            data.availableForSale === undefined ||
-            data.availableForSale === null
-          ) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: "Available units for sale is required",
-              path: ["availableForSale"],
-            });
-          }
-
-          if (
-            data.pricing.salePrice === undefined ||
-            data.pricing.salePrice === null
-          ) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: "Sale price is required",
-              path: ["pricing.salePrice"],
-            });
-          }
-        }
-
-        if (data.productType === "RENT" || data.productType === "BOTH") {
-          if (
-            data.availableForRent === undefined ||
-            data.availableForRent === null
-          ) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: "Available units for rent is required",
-              path: ["availableForRent"],
-            });
-          }
-
-          if (
-            data.pricing.rentalPricePerDay === undefined ||
-            data.pricing.rentalPricePerDay === null
-          ) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: "Rental price per day is required",
-              path: ["pricing.rentalPricePerDay"],
-            });
-          }
-
-          if (
-            data.pricing.minimumRentalPeriod === undefined ||
-            data.pricing.minimumRentalPeriod === null
-          ) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: "Minimum rental period is required",
-              path: ["pricing.minimumRentalPeriod"],
-            });
-          }
-
-          if (
-            data.pricing.maximumRentalPeriod === undefined ||
-            data.pricing.maximumRentalPeriod === null
-          ) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: "Maximum rental period is required",
-              path: ["pricing.maximumRentalPeriod"],
-            });
-          }
-        }
-      })
-    ),
+    resolver: zodResolver(productSchema),
     defaultValues: {
-      productName: "",
-      productDescription: "",
-      uploadedCoverImage: "",
-      discountPercentage: 0,
-      ageRestriction: "",
-      gameType: "",
-      productType: "SALE",
-      availableForRent: undefined,
-      availableForSale: undefined,
+      productName: singleProduct.productName,
+      productDescription: singleProduct.productDescription,
+      uploadedCoverImage: singleProduct.uploadedCoverImage,
+      discountPercentage: singleProduct.discountPercentage,
+      ageRestriction: singleProduct.ageRestriction,
+      gameType: singleProduct.gameType,
+      productType: singleProduct.productType,
+      availableForRent: singleProduct.availableForRent,
+      availableForSale: singleProduct.availableForSale,
       pricing: {
-        rentalPricePerDay: undefined,
-        minimumRentalPeriod: undefined,
-        maximumRentalPeriod: undefined,
-        salePrice: undefined,
+        rentalPricePerDay: singleProduct.priceDetails.rentalPricePerDay ?? 0,
+        minimumRentalPeriod:
+          singleProduct.priceDetails.minimumRentalPeriod ?? 0,
+        maximumRentalPeriod:
+          singleProduct.priceDetails.maximumRentalPeriod ?? 0,
+        salePrice: singleProduct.priceDetails.salePrice ?? 0,
       },
       uploadedVideo: {
-        setUp: "",
-        actionCard: "",
-        gamePlay: "",
+        setUp: singleProduct.uploadedVideo[0].setUp,
+        actionCard: singleProduct.uploadedVideo[0].actionCard,
+        gamePlay: singleProduct.uploadedVideo[0].gamePlay,
       },
     },
-    mode: "onChange", // Validate on change for better user experience
   });
+
   const productType = form.watch("productType");
-  const [createProduct] = useCreateProductMutation();
+  const [updateProduct] = useUpdateProductMutation();
   const { toast } = useToast();
   async function onSubmit(values: z.infer<typeof productSchema>) {
     try {
       setIsSubmitting(true); // Show loading state
       console.log("Submitting:", values);
 
-      await createProduct(values).unwrap(); // Await API call
+      await updateProduct({
+        id: singleProduct.id,
+        product: { ...values },
+      }).unwrap(); // Await API call
 
       toast({
-        title: "Product Created",
-        description: "Your product has been successfully listed!",
+        title: "Product updated",
+        description: "Your product has been successfully updated!",
         style: {
           backgroundColor: "green",
           color: "white",
@@ -203,47 +135,9 @@ export default function ProductPostForm() {
           borderRadius: "8px",
         },
       });
-
-      // Reset form after successful submission
-      form.reset({
-        productName: "",
-        productDescription: "",
-        uploadedCoverImage: "",
-        discountPercentage: 0,
-        ageRestriction: "",
-        gameType: "",
-        productType: "SALE",
-        availableForRent: undefined,
-        availableForSale: undefined,
-        pricing: {
-          rentalPricePerDay: undefined,
-          minimumRentalPeriod: undefined,
-          maximumRentalPeriod: undefined,
-          salePrice: undefined,
-        },
-        uploadedVideo: {
-          setUp: "",
-          actionCard: "",
-          gamePlay: "",
-        },
-      });
-
-      // Reset to first step
-      setCurrentStep(0);
     } catch (err) {
       console.log("Error:", err);
       // Handle API error (e.g., show toast notification)
-      toast({
-        title: "Error",
-        description:
-          "There was a problem creating your product. Please try again.",
-        style: {
-          backgroundColor: "red",
-          color: "white",
-          padding: "10px 20px",
-          borderRadius: "8px",
-        },
-      });
     } finally {
       setIsSubmitting(false); // Reset loading state
     }
@@ -260,7 +154,15 @@ export default function ProductPostForm() {
           "ageRestriction",
           "discountPercentage",
         ],
-        1: ["productType"],
+        1: [
+          "productType",
+          "availableForSale",
+          "availableForRent",
+          "pricing.salePrice",
+          "pricing.rentalPricePerDay",
+          "pricing.minimumRentalPeriod",
+          "pricing.maximumRentalPeriod",
+        ],
         2: [
           "uploadedCoverImage",
           "uploadedVideo.setUp",
@@ -269,36 +171,32 @@ export default function ProductPostForm() {
         ],
       }[currentStep];
 
-      // Get the product type to determine which fields are required
+      // Get only the fields that need validation based on product type
+      let filteredFields: (keyof z.infer<typeof productSchema>)[] =
+        fieldsToValidate
+          ? [...(fieldsToValidate as (keyof z.infer<typeof productSchema>)[])]
+          : [];
       const productTypeValue = form.getValues("productType");
 
-      // Add conditional fields based on product type
-      const conditionalFields: string[] = [];
       if (currentStep === 1) {
-        if (productTypeValue === "SALE" || productTypeValue === "BOTH") {
-          conditionalFields.push("availableForSale", "pricing.salePrice");
-        }
-
-        if (productTypeValue === "RENT" || productTypeValue === "BOTH") {
-          conditionalFields.push(
-            "availableForRent",
-            "pricing.rentalPricePerDay",
-            "pricing.minimumRentalPeriod",
-            "pricing.maximumRentalPeriod"
+        if (productTypeValue === "SALE") {
+          filteredFields = filteredFields.filter(
+            (field) =>
+              !field.includes("rentalPrice") &&
+              !field.includes("availableForRent") &&
+              !field.includes("RentalPeriod")
+          );
+        } else if (productTypeValue === "RENT") {
+          filteredFields = filteredFields.filter(
+            (field) =>
+              !field.includes("salePrice") &&
+              !field.includes("availableForSale")
           );
         }
       }
 
-      // Combine base fields with conditional fields
-      const allFieldsToValidate: (keyof z.infer<typeof productSchema>)[] = [
-        ...((fieldsToValidate || []) as (keyof z.infer<
-          typeof productSchema
-        >)[]),
-        ...(conditionalFields as (keyof z.infer<typeof productSchema>)[]),
-      ];
-
       // Trigger validation only for the fields in the current step
-      const result = await form.trigger(allFieldsToValidate);
+      const result = await form.trigger(filteredFields);
 
       if (result) {
         setCurrentStep(currentStep + 1);
@@ -346,6 +244,7 @@ export default function ProductPostForm() {
                     <button
                       key={step.id}
                       type="button"
+                      onClick={() => setCurrentStep(index)}
                       className={cn(
                         "text-sm font-medium",
                         currentStep >= index ? "text-teal" : "text-gray-500"
@@ -376,9 +275,7 @@ export default function ProductPostForm() {
                       name="productName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>
-                            Product Name <span className="text-red-500">*</span>
-                          </FormLabel>
+                          <FormLabel>Product Name</FormLabel>
                           <FormControl>
                             <Input
                               placeholder="Enter product name"
@@ -396,10 +293,7 @@ export default function ProductPostForm() {
                       name="productDescription"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>
-                            Product Description{" "}
-                            <span className="text-red-500">*</span>
-                          </FormLabel>
+                          <FormLabel>Product Description</FormLabel>
                           <FormControl>
                             <Textarea
                               placeholder="Enter product description"
@@ -425,16 +319,6 @@ export default function ProductPostForm() {
                                 min="0"
                                 max="100"
                                 {...field}
-                                value={
-                                  field.value === undefined ? "" : field.value
-                                }
-                                onChange={(e) =>
-                                  field.onChange(
-                                    e.target.value === ""
-                                      ? 0
-                                      : Number(e.target.value)
-                                  )
-                                }
                                 className="bg-gray-800 border-gray-700 text-white"
                               />
                             </FormControl>
@@ -448,10 +332,7 @@ export default function ProductPostForm() {
                         name="ageRestriction"
                         render={({ field }) => (
                           <FormItem className="flex flex-col">
-                            <FormLabel>
-                              Age Restriction{" "}
-                              <span className="text-red-500">*</span>
-                            </FormLabel>
+                            <FormLabel>Age Restriction</FormLabel>
                             <Popover open={ageOpen} onOpenChange={setAgeOpen}>
                               <PopoverTrigger asChild>
                                 <FormControl>
@@ -519,9 +400,7 @@ export default function ProductPostForm() {
                       name="gameType"
                       render={({ field }) => (
                         <FormItem className="flex flex-col">
-                          <FormLabel>
-                            Game Type <span className="text-red-500">*</span>
-                          </FormLabel>
+                          <FormLabel>Game Type</FormLabel>
                           <Popover
                             open={gameTypeOpen}
                             onOpenChange={setGameTypeOpen}
@@ -614,26 +493,7 @@ export default function ProductPostForm() {
                                   value="SALE"
                                   checked={field.value === "SALE"}
                                   className="sr-only"
-                                  onChange={() => {
-                                    field.onChange("SALE");
-                                    // Clear rental fields when switching to SALE only
-                                    form.setValue(
-                                      "availableForRent",
-                                      undefined
-                                    );
-                                    form.setValue(
-                                      "pricing.rentalPricePerDay",
-                                      undefined
-                                    );
-                                    form.setValue(
-                                      "pricing.minimumRentalPeriod",
-                                      undefined
-                                    );
-                                    form.setValue(
-                                      "pricing.maximumRentalPeriod",
-                                      undefined
-                                    );
-                                  }}
+                                  onChange={() => field.onChange("SALE")}
                                 />
                                 <span className="font-medium">Sale Only</span>
                               </label>
@@ -652,18 +512,7 @@ export default function ProductPostForm() {
                                   value="RENT"
                                   checked={field.value === "RENT"}
                                   className="sr-only"
-                                  onChange={() => {
-                                    field.onChange("RENT");
-                                    // Clear sale fields when switching to RENT only
-                                    form.setValue(
-                                      "availableForSale",
-                                      undefined
-                                    );
-                                    form.setValue(
-                                      "pricing.salePrice",
-                                      undefined
-                                    );
-                                  }}
+                                  onChange={() => field.onChange("RENT")}
                                 />
                                 <span className="font-medium">Rent Only</span>
                               </label>
@@ -698,8 +547,7 @@ export default function ProductPostForm() {
                     {(productType === "SALE" || productType === "BOTH") && (
                       <div className="space-y-4 border border-gray-800 rounded-lg p-4">
                         <h3 className="font-medium text-teal">
-                          Sale Information{" "}
-                          <span className="text-red-500">*</span>
+                          Sale Information
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <FormField
@@ -707,28 +555,13 @@ export default function ProductPostForm() {
                             name="availableForSale"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>
-                                  Available Units for Sale{" "}
-                                  <span className="text-red-500">*</span>
-                                </FormLabel>
+                                <FormLabel>Available Units for Sale</FormLabel>
                                 <FormControl>
                                   <Input
                                     type="number"
                                     min="0"
                                     {...field}
                                     className="bg-gray-800 border-gray-700 text-white"
-                                    value={
-                                      field.value === undefined
-                                        ? ""
-                                        : field.value
-                                    }
-                                    onChange={(e) =>
-                                      field.onChange(
-                                        e.target.value === ""
-                                          ? undefined
-                                          : Number(e.target.value)
-                                      )
-                                    }
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -741,28 +574,13 @@ export default function ProductPostForm() {
                             name="pricing.salePrice"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>
-                                  Sale Price{" "}
-                                  <span className="text-red-500">*</span>
-                                </FormLabel>
+                                <FormLabel>Sale Price</FormLabel>
                                 <FormControl>
                                   <Input
                                     type="number"
                                     min="0"
                                     {...field}
                                     className="bg-gray-800 border-gray-700 text-white"
-                                    value={
-                                      field.value === undefined
-                                        ? ""
-                                        : field.value
-                                    }
-                                    onChange={(e) =>
-                                      field.onChange(
-                                        e.target.value === ""
-                                          ? undefined
-                                          : Number(e.target.value)
-                                      )
-                                    }
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -776,34 +594,20 @@ export default function ProductPostForm() {
                     {(productType === "RENT" || productType === "BOTH") && (
                       <div className="space-y-4 border border-gray-800 rounded-lg p-4">
                         <h3 className="font-medium text-teal">
-                          Rental Information{" "}
-                          <span className="text-red-500">*</span>
+                          Rental Information
                         </h3>
                         <FormField
                           control={form.control}
                           name="availableForRent"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>
-                                Available Units for Rent{" "}
-                                <span className="text-red-500">*</span>
-                              </FormLabel>
+                              <FormLabel>Available Units for Rent</FormLabel>
                               <FormControl>
                                 <Input
                                   type="number"
                                   min="0"
                                   {...field}
                                   className="bg-gray-800 border-gray-700 text-white"
-                                  value={
-                                    field.value === undefined ? "" : field.value
-                                  }
-                                  onChange={(e) =>
-                                    field.onChange(
-                                      e.target.value === ""
-                                        ? undefined
-                                        : Number(e.target.value)
-                                    )
-                                  }
                                 />
                               </FormControl>
                               <FormMessage />
@@ -817,28 +621,13 @@ export default function ProductPostForm() {
                             name="pricing.rentalPricePerDay"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>
-                                  Rental Price Per Day{" "}
-                                  <span className="text-red-500">*</span>
-                                </FormLabel>
+                                <FormLabel>Rental Price Per Day</FormLabel>
                                 <FormControl>
                                   <Input
                                     type="number"
                                     min="0"
                                     {...field}
                                     className="bg-gray-800 border-gray-700 text-white"
-                                    value={
-                                      field.value === undefined
-                                        ? ""
-                                        : field.value
-                                    }
-                                    onChange={(e) =>
-                                      field.onChange(
-                                        e.target.value === ""
-                                          ? undefined
-                                          : Number(e.target.value)
-                                      )
-                                    }
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -852,8 +641,7 @@ export default function ProductPostForm() {
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>
-                                  Minimum Rental Period (Days){" "}
-                                  <span className="text-red-500">*</span>
+                                  Minimum Rental Period (Days)
                                 </FormLabel>
                                 <FormControl>
                                   <Input
@@ -861,18 +649,6 @@ export default function ProductPostForm() {
                                     min="1"
                                     {...field}
                                     className="bg-gray-800 border-gray-700 text-white"
-                                    value={
-                                      field.value === undefined
-                                        ? ""
-                                        : field.value
-                                    }
-                                    onChange={(e) =>
-                                      field.onChange(
-                                        e.target.value === ""
-                                          ? undefined
-                                          : Number(e.target.value)
-                                      )
-                                    }
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -886,8 +662,7 @@ export default function ProductPostForm() {
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>
-                                  Maximum Rental Period (Days){" "}
-                                  <span className="text-red-500">*</span>
+                                  Maximum Rental Period (Days)
                                 </FormLabel>
                                 <FormControl>
                                   <Input
@@ -895,18 +670,6 @@ export default function ProductPostForm() {
                                     min="1"
                                     {...field}
                                     className="bg-gray-800 border-gray-700 text-white"
-                                    value={
-                                      field.value === undefined
-                                        ? ""
-                                        : field.value
-                                    }
-                                    onChange={(e) =>
-                                      field.onChange(
-                                        e.target.value === ""
-                                          ? undefined
-                                          : Number(e.target.value)
-                                      )
-                                    }
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -1209,10 +972,10 @@ export default function ProductPostForm() {
                       {isSubmitting ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Creating...
+                          Updating...
                         </>
                       ) : (
-                        "Create Product Post"
+                        "Update Product"
                       )}
                     </Button>
                   )}

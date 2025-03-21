@@ -2,8 +2,7 @@ import type React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { DollarSign, Calendar, Tag, Info, Video, Github } from "lucide-react";
+import { DollarSign, Calendar, Tag, Info, Video } from "lucide-react";
 import Image from "next/image";
 
 interface ProductPreviewProps {
@@ -81,24 +80,10 @@ const ProductPreview: React.FC<ProductPreviewProps> = ({ formData }) => {
     return (url && url.includes("youtube.com")) || url.includes("youtu.be");
   };
 
-  // GitHub repository URL (replace with actual repo URL)
-  const githubRepoUrl = "https://github.com/yourusername/game-marketplace";
-
   return (
     <div className="bg-gray-900 text-white p-6 rounded-lg max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Product Preview</h1>
-        <a
-          href={githubRepoUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 text-gray-300 hover:text-white transition-colors"
-        >
-          <Button variant="outline" size="sm" className="gap-2">
-            <Github className="h-4 w-4" />
-            <span>View on GitHub</span>
-          </Button>
-        </a>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
