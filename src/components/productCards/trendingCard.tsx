@@ -13,13 +13,16 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Bungee } from "next/font/google";
-import type { PriceDetails, Product, Review } from "@prisma/client";
+import type { PriceDetails, Product, Review, User } from "@prisma/client";
 import { usePathname, useRouter } from "next/navigation";
 import { formatPrice, truncateText } from "@/utils/helper";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useGetWishlistQuery } from "@/state/features/whishlistApi";
 import DateRangeDialog from "../clientComponents/dateInput";
 import { useCart } from "@/hooks/useCart";
+import { useSelector } from "react-redux";
+import { RootState } from "@/state/store";
+import { useToast } from "@/hooks/use-toast";
 
 const bungee = Bungee({
   subsets: ["latin"],
@@ -38,13 +41,24 @@ export default function ProductListingCard({
 }: ProductListingCardProps) {
   const { handleToggleWishlist } = useWishlist();
   const { data: wishlistData } = useGetWishlistQuery();
-
+  const user = useSelector(
+    (state: RootState) => state.currentUser?.user as User | null
+  );
   // Check if the product is already in the wishlist
   const isInWishlist = wishlistData?.wishlist?.some(
     (item) => item.id === product.id
   );
+  const { toast } = useToast();
   const handleWishlist = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "You need to log in to add items to your wishlist.",
+        variant: "destructive",
+      });
+      return;
+    }
     handleToggleWishlist(product);
   };
   const router = useRouter();
@@ -77,6 +91,14 @@ export default function ProductListingCard({
   const { handleAddToCart } = useCart();
   const handleSaveToBuy = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "You need to log in to add items to your cart.",
+        variant: "destructive",
+      });
+      return;
+    }
     handleAddToCart(product, "SALE", 1);
   };
 
@@ -219,7 +241,7 @@ export default function ProductListingCard({
               <span className="xs:hidden">Save to buy</span>
             </Button>
           )}
-          {rentalPricePerDay && <DateRangeDialog product={product} />}
+          {rentalPricePerDay > 0 && <DateRangeDialog product={product} />}
         </div>
       </div>
     </Card>

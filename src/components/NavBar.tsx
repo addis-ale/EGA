@@ -110,7 +110,6 @@ function MobileSearchToggle({
 
 function UserActions() {
   const user = useSelector((state: RootState) => state.currentUser.user);
-  console.log(user);
 
   return (
     <div className="flex items-center gap-2 px-2 lg:px-4">

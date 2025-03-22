@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { useGetWishlistQuery } from "@/state/features/whishlistApi";
 import { Heart, Loader2 } from "lucide-react";
@@ -8,11 +9,39 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import TrendingCard from "@/components/productCards/trendingCard";
 import Container from "@/components/container";
+import { RootState } from "@/state/store";
+import { useSelector } from "react-redux";
+import { User } from "@prisma/client";
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 const WishlistPage = () => {
   const { data, isLoading, error } = useGetWishlistQuery();
   const wishlists = data?.wishlist || [];
-  console.log(wishlists);
+  const user = useSelector(
+    (state: RootState) => state.currentUser?.user as User | null
+  );
+  const router = useRouter();
+  const { toast } = useToast();
+  useEffect(() => {
+    if (!user) {
+      toast({
+        title: "Unauthorized",
+        description: "Please log in to view your wishlist.",
+        variant: "destructive",
+      });
+      router.push("/");
+    }
+  }, [user, toast, router]);
+
+  if (!user) {
+    return (
+      <div className="flex w-full justify-center items-center min-h-screen">
+        <p className="text-muted-foreground">Redirecting to home...</p>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
@@ -46,7 +75,7 @@ const WishlistPage = () => {
             Add items to your wishlist to save them for later
           </p>
           <Button asChild>
-            <Link href="/products">Browse Products</Link>
+            <Link href="/">Browse Products</Link>
           </Button>
         </div>
       </Container>

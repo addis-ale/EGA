@@ -32,8 +32,8 @@ export default function GameSubcategorySelector({
       icon: <Users className="h-5 w-5 mr-2" />,
     },
     {
-      id: "Virtual Game",
-      name: "Virtual Games",
+      id: "Digital Game",
+      name: "Digital Games",
       icon: <Gamepad2 className="h-5 w-5 mr-2" />,
     },
   ];

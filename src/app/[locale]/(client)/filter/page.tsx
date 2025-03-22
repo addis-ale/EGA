@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useGetAllProductsQuery } from "@/state/features/productApi";
-import type { PriceDetails, Product, Review } from "@prisma/client";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import TrendingCard from "@/components/productCards/trendingCard";
@@ -43,26 +42,14 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useSearchParams } from "next/navigation";
-
-interface ProductProps {
-  product: Product & {
-    priceDetails: PriceDetails;
-    reviews: Review[];
-  };
-}
+import { formatPrice } from "@/utils/helper";
 
 export default function FilterPage() {
   const searchParams = useSearchParams();
   console.log("Search Keyword", searchParams.get("keyword"));
-  const formatProductData = (products: any) =>
-    products?.map((product: any) => ({
-      ...product,
-      priceDetails: product.priceDetails || {},
-      videoUploaded: product.videoUploaded || {},
-      reviews: product.reviews || [],
-    })) || [];
 
   const { data, isLoading } = useGetAllProductsQuery({});
+  console.log("data from filter", data?.products);
   const [products, setProducts] = useState<any[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
   const [isFiltering, setIsFiltering] = useState(false);
@@ -86,12 +73,22 @@ export default function FilterPage() {
 
   // Define price ranges
   const priceRanges = [
-    { id: "price-0-50", label: "Under $50", min: 0, max: 50 },
-    { id: "price-50-100", label: "$50 - $100", min: 50, max: 100 },
-    { id: "price-100-200", label: "$100 - $200", min: 100, max: 200 },
+    { id: "price-0-50", label: `Under ${formatPrice(50)}`, min: 0, max: 50 },
+    {
+      id: "price-50-100",
+      label: `${formatPrice(50)} - ${formatPrice(100)}`,
+      min: 50,
+      max: 100,
+    },
+    {
+      id: "price-100-200",
+      label: `${formatPrice(100)} - ${formatPrice(200)}`,
+      min: 100,
+      max: 200,
+    },
     {
       id: "price-200-plus",
-      label: "$200+",
+      label: `${formatPrice(200)}+`,
       min: 200,
       max: Number.POSITIVE_INFINITY,
     },
@@ -117,7 +114,7 @@ export default function FilterPage() {
 
   useEffect(() => {
     if (data?.products) {
-      const formattedProducts = formatProductData(data.products);
+      const formattedProducts = data.products;
       setProducts(formattedProducts);
       setFilteredProducts(formattedProducts);
     }
@@ -813,8 +810,8 @@ export default function FilterPage() {
                 </div>
                 <h3 className="text-xl font-medium mb-2">No products found</h3>
                 <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                  We couldn't find any products matching your current filter
-                  criteria. Try adjusting your filters or browse our full
+                  We couldn&apos;t find any products matching your current
+                  filter criteria. Try adjusting your filters or browse our full
                   collection.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">

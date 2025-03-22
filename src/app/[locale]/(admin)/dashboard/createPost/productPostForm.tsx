@@ -48,18 +48,7 @@ import { productSchema } from "@/schemas/productSchema";
 
 const ageRestrictions = ["None", "13+", "15+", "18+"];
 
-const gameTypes = [
-  "Table Top Game",
-  "Card Game",
-  "Board Game",
-  "Role Playing Game",
-  "Dice Game",
-  "Strategy Game",
-  "Party Game",
-  "Educational Game",
-  "Puzzle Game",
-  "Other",
-];
+const gameTypes = ["Table Top Game", "Physical Game", "Digital Game"];
 
 // Define the steps for the form wizard
 const formSteps = [

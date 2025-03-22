@@ -39,8 +39,6 @@ export const useWishlist = () => {
           },
         });
       } catch (error) {
-        console.error("Error occurred:", error);
-
         if ("status" in (error as FetchBaseQueryError)) {
           const err = error as FetchBaseQueryError;
 

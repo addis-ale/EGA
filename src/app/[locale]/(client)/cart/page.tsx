@@ -4,6 +4,12 @@ import { useGetCartItemsQuery } from "@/state/features/cartApi";
 import CartDetailSkeleton from "@/components/clientComponents/cartDetailSkeleton";
 import EmptyCart from "./empytCart";
 import CartItems from "./cartDetail";
+import { User } from "@prisma/client";
+import { useSelector } from "react-redux";
+import { RootState } from "@/state/store";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
 
 const CartPage = () => {
   const { data, isLoading } = useGetCartItemsQuery();
@@ -22,13 +28,37 @@ const CartPage = () => {
   const myCart = formatCartItems(cartItems);
   console.log(myCart);
 
+  const user = useSelector(
+    (state: RootState) => state.currentUser?.user as User | null
+  );
+  const router = useRouter();
+  const { toast } = useToast();
+  useEffect(() => {
+    if (!user) {
+      toast({
+        title: "Unauthorized",
+        description: "Please log in to view your cart.",
+        variant: "destructive",
+      });
+      router.push("/");
+    }
+  }, [user, toast, router]);
+
+  if (!user) {
+    return (
+      <div className="flex w-full justify-center items-center min-h-screen">
+        <p className="text-muted-foreground">Redirecting to home...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex justify-center items-center min-h-screen w-full py-8">
       <Container>
         {isLoading ? (
           <CartDetailSkeleton />
         ) : (cartItems ?? []).length > 0 ? (
-          <div>
+          <div className="w-full">
             <CartItems cartItems={myCart} totalPrice={totalPrice} />
           </div>
         ) : (

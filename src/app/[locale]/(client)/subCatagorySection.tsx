@@ -18,7 +18,7 @@ interface ProductType extends Product {
 const ensureProductType = (product: any): ProductType => {
   return {
     ...product,
-    priceDetails: product.priceDetails || { price: 0, currency: "USD" },
+    priceDetails: product.priceDetails || { price: 0, currency: "ETB" },
     videoUploaded: product.videoUploaded || [],
     reviews: product.reviews || [],
   };
@@ -35,7 +35,7 @@ export default function SubCategory() {
     <div className="container mx-auto px-4 py-8">
       <GameSubcategorySelector
         onCategoryChange={setSelectedCategory}
-        initialCategory="all"
+        initialCategory="ALL"
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

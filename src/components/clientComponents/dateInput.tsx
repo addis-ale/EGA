@@ -34,7 +34,9 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Calendar } from "../ui/calendar";
 import { useCart } from "@/hooks/useCart";
-import { Product } from "@prisma/client";
+import { Product, User } from "@prisma/client";
+import { useSelector } from "react-redux";
+import { RootState } from "@/state/store";
 
 const formSchema = z
   .object({
@@ -49,10 +51,12 @@ const formSchema = z
     message: "End date must be after start date",
     path: ["endDate"],
   });
-interface DateRangeDialogPops {
+
+interface DateRangeDialogProps {
   product: Product;
 }
-export default function DateRangeDialog({ product }: DateRangeDialogPops) {
+
+export default function DateRangeDialog({ product }: DateRangeDialogProps) {
   const [open, setOpen] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -62,9 +66,33 @@ export default function DateRangeDialog({ product }: DateRangeDialogPops) {
       endDate: undefined,
     },
   });
+
   const { handleAddToCart } = useCart();
+  const user = useSelector(
+    (state: RootState) => state.currentUser?.user as User | null
+  );
+
+  const handleOpenChange = (isOpen: boolean) => {
+    if (isOpen && !user) {
+      toast({
+        title: "Login Required",
+        description: "You need to log in to rent this item.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setOpen(isOpen);
+  };
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "You need to log in to add items to your cart.",
+        variant: "destructive",
+      });
+      return;
+    }
     handleAddToCart(product, "RENT", 1, values.startDate, values.endDate);
     toast({
       title: "Date range selected",
@@ -77,7 +105,7 @@ export default function DateRangeDialog({ product }: DateRangeDialogPops) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
           variant="outline"

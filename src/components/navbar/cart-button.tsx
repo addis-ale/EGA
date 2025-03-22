@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 export function CartButton() {
   const router = useRouter();
   const { data } = useGetCartItemsQuery();
+  console.log(data);
   const totalQuantity =
     data?.cart.reduce((acc, item) => acc + (item.quantity || 0), 0) ?? 0;
   const pathname = usePathname(); // Get current path

@@ -21,6 +21,7 @@ const CustomeDropDown = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const user = useSelector((state: RootState) => state.currentUser.user);
   const pathName = usePathname();
+  const currentPath = pathName.split("/").slice(0, 2).join("/");
   // Handle toggling of the dropdown menu
   const handleDropdownToggle = () => {
     setIsDropDownOpen((prev) => !prev);
@@ -50,7 +51,7 @@ const CustomeDropDown = () => {
               (pathName.startsWith("/") &&
                 !pathName.includes("/dashboard"))) && (
               <DropdownMenuLabel>
-                <Link href="/dashboard" className="w-full">
+                <Link href={`${currentPath}/dashboard`} className="w-full">
                   Your Dashboard
                 </Link>
               </DropdownMenuLabel>
@@ -79,11 +80,6 @@ const CustomeDropDown = () => {
           <DropdownMenuContent>
             <DropdownMenuLabel>Your Orders</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <Link href="/profile" className="w-full">
-                Profile
-              </Link>
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={handleSignoutClick}>
               <span>Sign Out</span>
             </DropdownMenuItem>
