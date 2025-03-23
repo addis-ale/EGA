@@ -9,7 +9,7 @@ export default function Footer() {
         <div className="mb-8 md:mb-0">
           <Link href="/" className="inline-block">
             <h2 className="text-4xl font-bold tracking-tight">EGA</h2>
-            <p className="text-sm text-gray-300">Figurine Store</p>
+            <p className="text-sm text-gray-300">Game Store</p>
           </Link>
           <div className="flex items-center mt-6 space-x-4">
             <Link href="#" className="text-gray-300 hover:text-white">

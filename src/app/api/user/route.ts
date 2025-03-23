@@ -16,7 +16,7 @@ export async function GET(req: Request) {
         id: true,
         name: true,
         email: true,
-        role: true, // Include role in response
+        role: true,
         image: true,
       },
     });

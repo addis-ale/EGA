@@ -1,7 +1,7 @@
 "use client";
 import Container from "@/components/container";
 import { useGetCartItemsQuery } from "@/state/features/cartApi";
-import CartDetailSkeleton from "@/components/clientComponents/cartDetailSkeleton";
+import CartDetailSkeleton from "@/components/skeleton/cartDetailSkeleton";
 import EmptyCart from "./empytCart";
 import CartItems from "./cartDetail";
 import { User } from "@prisma/client";
