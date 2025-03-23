@@ -1,3 +1,4 @@
+import { getCurrentUser } from "@/actions/getCurrentUser";
 import prisma from "@/lib/prismadb";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
@@ -50,6 +51,13 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const user = await getCurrentUser();
+    if (!user || user.role !== "ADMIN") {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized access!" },
+        { status: 400 }
+      );
+    }
     const { id } = params;
 
     if (!id) {
@@ -98,6 +106,13 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const user = await getCurrentUser();
+    if (!user || user.role !== "ADMIN") {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized access!" },
+        { status: 400 }
+      );
+    }
     const { id } = params;
     const body = await req.json();
 

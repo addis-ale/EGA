@@ -190,29 +190,19 @@ model ReviewReaction {
   review   Review  @relation(fields: [reviewId], references: [id], onDelete: Cascade)
   @@unique([userId, reviewId]) // One reaction per user per review
 }
-
-// model SearchHistory {
-//   id        String   @id @default(auto()) @map("_id") @db.ObjectId
-//   userId    String   @db.ObjectId
-//   query     String   // What the user searched for
-//   searchedAt DateTime @default(now())
-//   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-// }
 model SearchHistory {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
-            userId String   @unique   @db.ObjectId
-            user User @relation(fields: [userId],references: [id],onDelete: Cascade)
-            search Search[]
-            createdAt DateTime @default(now())
-            updatedAt DateTime @updatedAt
-
-
-
+  userId String   @unique   @db.ObjectId
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+  search Search[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 model Search{
-  id                String  @id @default(auto()) @map("_id") @db.ObjectId
-            searchId String  @db.ObjectId
-            searchHistory SearchHistory @relation(fields: [searchId],references: [id],onDelete: Cascade)
-            searchQuery String 
+  id    String  @id @default(auto()) @map("_id") @db.ObjectId
+  searchId    String  @db.ObjectId
+  searchHistory SearchHistory @relation(fields: [searchId],references: [id],onDelete: Cascade)
+  searchQuery String 
+  createdAt DateTime @default(now())
 
 }

@@ -7,14 +7,17 @@ import Trending from "@/components/clientComponents/trending";
 import Recommended from "@/components/clientComponents/recommended";
 import { useState } from "react";
 import { useGetAllProductsQuery } from "@/state/features/productApi";
-import TrendingSkeleton from "@/components/productCards/trendingCardSkeleton";
 import TopRated from "@/components/clientComponents/topRated";
 import SubCategory from "./subCatagorySection";
 import ProductCarousel from "@/components/clientComponents/dealoftheweek";
 import { useGetCartItemsQuery } from "@/state/features/cartApi";
+import TrendingSkeleton from "@/components/skeleton/trendingSkeleton";
+import SubCategoryLoading from "@/components/skeleton/subCategory";
+import TopRatedSkeleton from "@/components/skeleton/topRatedSkeleton";
+import ProductCarouselLoading from "@/components/skeleton/dealOfTheWeekSkeleton";
 
 const LIMIT_3 = 3; // Limit for the first set of trending products
-const LIMIT_12 = 12; // Limit for the recommended products
+const LIMIT_8 = 8; // Limit for the recommended products
 const LIMIT_6 = 6; // Limit for the top-rated products
 
 const ProductList = () => {
@@ -31,7 +34,7 @@ const ProductList = () => {
   const { data: recommended, isLoading: isRecommendedLoading } =
     useGetAllProductsQuery({
       category: "recommended",
-      limit: LIMIT_12,
+      limit: LIMIT_8,
       page,
     });
 
@@ -48,6 +51,7 @@ const ProductList = () => {
     useGetAllProductsQuery({
       category: "deal-of-the-week",
     });
+  const { data } = useGetCartItemsQuery();
 
   const totalTrendingProducts = trending?.totalProducts;
   const totaldeal = dealOfTheWeek?.totalProducts;
@@ -72,7 +76,6 @@ const ProductList = () => {
   console.log("Recommended:", recommendedProducts);
   console.log("Top Rated:", topRatedProducts);
   console.log("Deal of the Week:", dealOfTheWeekProduct);
-  const { data } = useGetCartItemsQuery();
   console.log("Total quantity", data);
   return (
     <Container>
@@ -82,7 +85,12 @@ const ProductList = () => {
         isRecommendedLoading ||
         isTopRatedLoading ||
         isDealLoading ? (
-          <TrendingSkeleton />
+          <>
+            <TrendingSkeleton />
+            <SubCategoryLoading />
+            <TopRatedSkeleton />
+            <ProductCarouselLoading />
+          </>
         ) : (
           <>
             {trendingProducts.length > 0 && (
@@ -93,7 +101,10 @@ const ProductList = () => {
               />
             )}
             {recommendedProducts.length > 0 && (
-              <Recommended recommended={recommendedProducts} />
+              <Recommended
+                recommended={recommendedProducts}
+                isloading={isRecommendedLoading}
+              />
             )}
 
             <SubCategory />

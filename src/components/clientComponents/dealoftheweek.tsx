@@ -14,7 +14,7 @@ import { Bungee } from "next/font/google";
 import { truncateText } from "@/utils/helper";
 import { Button } from "../ui/button";
 import { ShoppingCart } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 const bungee = Bungee({
   subsets: ["latin"],
@@ -50,6 +50,8 @@ export default function ProductCarousel({
   const currentProductName =
     dealOfTheWeek[currentIndex % totaldeal]?.productName;
   const router = useRouter();
+  const pathName = usePathname();
+  const currentPath = pathName.split("/").slice(0, 2).join("/");
   return (
     <div className="w-full  text-white py-6">
       {/* Title at the top */}
@@ -72,11 +74,13 @@ export default function ProductCarousel({
         className="w-full"
       >
         <CarouselContent className="-ml-2 md:-ml-4">
-          {[...dealOfTheWeek, ...dealOfTheWeek].map((product, index) => (
+          {[...dealOfTheWeek].map((product, index) => (
             <CarouselItem
               key={`${product.id}-${index}`}
               className="pl-2 md:pl-4 basis-1/3"
-              onClick={() => router.push(`product/${product.id}`)}
+              onClick={() =>
+                router.push(`${currentPath}/product/${product.id}`)
+              }
             >
               <div className="aspect-square relative overflow-hidden rounded-lg border border-zinc-800">
                 <Image
@@ -99,8 +103,11 @@ export default function ProductCarousel({
         >
           {truncateText(currentProductName)}
         </h3>
-        <div className="text-sm mt-2 text-zinc-400">1500 deals</div>
-        <Button className="flex items-center justify-center gap-2 bg-green-600 px-2 py-1 md:px-4 md:py-2 hover:bg-green-700 w-fit sm:w-auto">
+        <div className="text-sm mt-2 text-zinc-400">{totaldeal} deals</div>
+        <Button
+          className="flex items-center justify-center gap-2 bg-green-600 px-2 py-1 md:px-4 md:py-2 hover:bg-green-700 w-fit sm:w-auto"
+          onClick={() => router.push("/")}
+        >
           <ShoppingCart className="h-4 w-4 text-white" />
           <span className="text-white">Purchase Now</span>
         </Button>

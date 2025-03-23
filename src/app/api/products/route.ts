@@ -4,10 +4,15 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/actions/getCurrentUser";
 import { ZodError } from "zod";
 import { productSchema } from "@/schemas/productSchema";
+import { Prisma } from "@prisma/client";
 
 type SortOrder = "asc" | "desc";
 export async function POST(req: Request, res: Response) {
   try {
+    const user = await getCurrentUser();
+    if (!user || user.role !== "ADMIN") {
+      throw new Error("Unauthorized access!");
+    }
     const body = await req.json();
     const validatedData = productSchema.parse(body);
     const {
@@ -84,14 +89,10 @@ export async function GET(req: Request) {
     const skip = (page - 1) * limit;
 
     const user = await getCurrentUser();
-    let where: {
-      gameType?: string;
-      OR?: { productName?: { in: string[] }; gameType?: { in: string[] } }[];
-      views?: { gt: number };
-    } = {};
+    let where: Prisma.ProductWhereInput = {};
     const orderBy: { [key: string]: SortOrder } = {};
 
-    // 1️⃣ If no category is provided, fetch all products without pagination
+    // If no category is provided, fetch all products without pagination
     if (!category || gameTypeFilter === "ALL") {
       if (gameTypeFilter && gameTypeFilter !== "ALL") {
         where.gameType = gameTypeFilter;
@@ -114,7 +115,7 @@ export async function GET(req: Request) {
       );
     }
 
-    // 2️⃣ Handle category filtering
+    //CATAGORY FILTERING
     if (category === "recommended") {
       if (!user) {
         return NextResponse.json(
@@ -122,22 +123,34 @@ export async function GET(req: Request) {
           { status: 200 }
         );
       }
-
-      const searchHistory = await prisma.search.findMany({
-        where: { id: user.id },
-        select: { searchQuery: true },
+      const search = await prisma.searchHistory.findFirst({
+        where: { userId: user.id },
       });
 
+      if (!search) {
+        // No search history exists for the user, returning empty response.
+        return NextResponse.json(
+          { success: true, products: [], totalProducts: 0 },
+          { status: 200 }
+        );
+      }
+
+      // Fetching search queries if search history exists
+      const searchHistory = await prisma.search.findMany({
+        where: { searchId: search.id },
+        select: { searchQuery: true },
+        take: 10,
+        orderBy: { createdAt: "desc" },
+      });
       if (searchHistory.length > 0) {
         const searchKeywords = searchHistory
           .map((entry) => entry.searchQuery)
           .filter(Boolean);
         if (searchKeywords.length > 0) {
           where = {
-            OR: [
-              { productName: { in: searchKeywords } },
-              { gameType: { in: searchKeywords } },
-            ],
+            OR: searchKeywords.flatMap((keyword) => [
+              { productName: { contains: keyword, mode: "insensitive" } },
+            ]),
           };
         } else {
           return NextResponse.json(

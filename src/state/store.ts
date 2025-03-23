@@ -6,21 +6,23 @@ import { productApi } from "./features/productApi";
 import { wishlistApi } from "./features/whishlistApi";
 import { cartApi } from "./features/cartApi";
 import { FilterApi } from "./features/filterApi";
+import { searchApi } from "./features/searchApi";
 
 // Configuration for Redux Persist
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["createPost", "currentUser"], // Persisted reducers
+  whitelist: ["createPost", "currentUser"],
 };
 
 // Combine reducers
 const rootReducer = combineReducers({
-  currentUser: currentUserState, // Persisted reducer
+  currentUser: currentUserState,
   [productApi.reducerPath]: productApi.reducer,
   [wishlistApi.reducerPath]: wishlistApi.reducer,
   [cartApi.reducerPath]: cartApi.reducer,
   [FilterApi.reducerPath]: FilterApi.reducer,
+  [searchApi.reducerPath]: searchApi.reducer,
 });
 
 // Wrap rootReducer with persistReducer
@@ -36,7 +38,8 @@ export const store = configureStore({
       productApi.middleware,
       wishlistApi.middleware,
       cartApi.middleware,
-      FilterApi.middleware
+      FilterApi.middleware,
+      searchApi.middleware
     ),
 });
 

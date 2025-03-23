@@ -43,10 +43,13 @@ import {
 } from "@/components/ui/sheet";
 import { useSearchParams } from "next/navigation";
 import { formatPrice } from "@/utils/helper";
+import { useCreateSearchQueryMutation } from "@/state/features/searchApi";
 
 export default function FilterPage() {
   const searchParams = useSearchParams();
+  const keyword = searchParams.get("keyword");
   console.log("Search Keyword", searchParams.get("keyword"));
+  const [createSearchQuery] = useCreateSearchQueryMutation();
 
   const { data, isLoading } = useGetAllProductsQuery({});
   console.log("data from filter", data?.products);
@@ -674,6 +677,29 @@ export default function FilterPage() {
   useEffect(() => {
     setSearchKeyword(searchParams.get("keyword"));
   }, [searchParams]);
+  // Add this before the return statement
+  const handleCreateSearchApi = useCallback(
+    async (searchKeyword: string) => {
+      try {
+        console.log("hello");
+        await createSearchQuery({ keyword: searchKeyword }).unwrap();
+        console.log("Search keyword sent to server:", searchKeyword);
+      } catch (error) {
+        console.error("Error sending search keyword:", error);
+      }
+    },
+    [createSearchQuery]
+  );
+
+  useEffect(() => {
+    setSearchKeyword(searchParams.get("keyword"));
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (keyword && keyword.trim() !== "") {
+      handleCreateSearchApi(keyword);
+    }
+  }, [keyword, handleCreateSearchApi]);
 
   return (
     <Container>
