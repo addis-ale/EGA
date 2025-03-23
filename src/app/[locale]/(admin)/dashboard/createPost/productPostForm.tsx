@@ -9,6 +9,7 @@ import {
   Loader2,
   ArrowLeft,
   ArrowRight,
+  AlertCircle,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 
@@ -45,10 +46,29 @@ import Image from "next/image";
 import { useCreateProductMutation } from "@/state/features/productApi";
 import { useToast } from "@/hooks/use-toast";
 import { productSchema } from "@/schemas/productSchema";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const ageRestrictions = ["None", "13+", "15+", "18+"];
 
 const gameTypes = ["Table Top Game", "Physical Game", "Digital Game"];
+
+// URL validation regex pattern
+const urlPattern = new RegExp(
+  "^(https?:\\/\\/)?" + // protocol
+    "((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|" + // domain name
+    "((\\d{1,3}\\.){3}\\d{1,3})|" + // OR ip (v4) address
+    "localhost|" + // OR localhost
+    "(github\\.com)|" + // OR github.com
+    "(githubusercontent\\.com)|" + // OR githubusercontent.com
+    "(raw\\.githubusercontent\\.com))" + // OR raw.githubusercontent.com
+    "(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*" + // port and path
+    "(\\?[;&a-z\\d%_.~+=-]*)?" + // query string
+    "(\\#[-a-z\\d_]*)?$", // fragment locator
+  "i"
+);
+
+const youtubeUrlPattern =
+  /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
 
 // Define the steps for the form wizard
 const formSteps = [
@@ -64,90 +84,136 @@ export default function ProductPostForm() {
   const [ageOpen, setAgeOpen] = useState(false);
   const [gameTypeOpen, setGameTypeOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [imageError, setImageError] = useState(false);
+
+  // Create a modified schema with URL validation
+  const enhancedProductSchema = productSchema.superRefine((data, ctx) => {
+    // Validate age restriction is required
+    if (!data.ageRestriction) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Age restriction is required",
+        path: ["ageRestriction"],
+      });
+    }
+
+    // Validate based on product type
+    if (data.productType === "SALE" || data.productType === "BOTH") {
+      if (
+        data.availableForSale === undefined ||
+        data.availableForSale === null
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Available units for sale is required",
+          path: ["availableForSale"],
+        });
+      }
+
+      if (
+        data.pricing.salePrice === undefined ||
+        data.pricing.salePrice === null
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Sale price is required",
+          path: ["pricing.salePrice"],
+        });
+      }
+    }
+
+    if (data.productType === "RENT" || data.productType === "BOTH") {
+      if (
+        data.availableForRent === undefined ||
+        data.availableForRent === null
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Available units for rent is required",
+          path: ["availableForRent"],
+        });
+      }
+
+      if (
+        data.pricing.rentalPricePerDay === undefined ||
+        data.pricing.rentalPricePerDay === null
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Rental price per day is required",
+          path: ["pricing.rentalPricePerDay"],
+        });
+      }
+
+      if (
+        data.pricing.minimumRentalPeriod === undefined ||
+        data.pricing.minimumRentalPeriod === null
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Minimum rental period is required",
+          path: ["pricing.minimumRentalPeriod"],
+        });
+      }
+
+      if (
+        data.pricing.maximumRentalPeriod === undefined ||
+        data.pricing.maximumRentalPeriod === null
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Maximum rental period is required",
+          path: ["pricing.maximumRentalPeriod"],
+        });
+      }
+    }
+
+    // Validate image URL if provided
+    if (data.uploadedCoverImage && !urlPattern.test(data.uploadedCoverImage)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Please enter a valid URL (including GitHub URLs)",
+        path: ["uploadedCoverImage"],
+      });
+    }
+
+    // Validate YouTube URLs if provided
+    if (
+      data.uploadedVideo.setUp &&
+      !youtubeUrlPattern.test(data.uploadedVideo.setUp)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Please enter a valid YouTube URL",
+        path: ["uploadedVideo.setUp"],
+      });
+    }
+
+    if (
+      data.uploadedVideo.actionCard &&
+      !youtubeUrlPattern.test(data.uploadedVideo.actionCard)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Please enter a valid YouTube URL",
+        path: ["uploadedVideo.actionCard"],
+      });
+    }
+
+    if (
+      data.uploadedVideo.gamePlay &&
+      !youtubeUrlPattern.test(data.uploadedVideo.gamePlay)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Please enter a valid YouTube URL",
+        path: ["uploadedVideo.gamePlay"],
+      });
+    }
+  });
+
   const form = useForm<z.infer<typeof productSchema>>({
-    resolver: zodResolver(
-      productSchema.superRefine((data, ctx) => {
-        // Validate age restriction is required
-        if (!data.ageRestriction) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Age restriction is required",
-            path: ["ageRestriction"],
-          });
-        }
-
-        // Validate based on product type
-        if (data.productType === "SALE" || data.productType === "BOTH") {
-          if (
-            data.availableForSale === undefined ||
-            data.availableForSale === null
-          ) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: "Available units for sale is required",
-              path: ["availableForSale"],
-            });
-          }
-
-          if (
-            data.pricing.salePrice === undefined ||
-            data.pricing.salePrice === null
-          ) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: "Sale price is required",
-              path: ["pricing.salePrice"],
-            });
-          }
-        }
-
-        if (data.productType === "RENT" || data.productType === "BOTH") {
-          if (
-            data.availableForRent === undefined ||
-            data.availableForRent === null
-          ) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: "Available units for rent is required",
-              path: ["availableForRent"],
-            });
-          }
-
-          if (
-            data.pricing.rentalPricePerDay === undefined ||
-            data.pricing.rentalPricePerDay === null
-          ) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: "Rental price per day is required",
-              path: ["pricing.rentalPricePerDay"],
-            });
-          }
-
-          if (
-            data.pricing.minimumRentalPeriod === undefined ||
-            data.pricing.minimumRentalPeriod === null
-          ) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: "Minimum rental period is required",
-              path: ["pricing.minimumRentalPeriod"],
-            });
-          }
-
-          if (
-            data.pricing.maximumRentalPeriod === undefined ||
-            data.pricing.maximumRentalPeriod === null
-          ) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: "Maximum rental period is required",
-              path: ["pricing.maximumRentalPeriod"],
-            });
-          }
-        }
-      })
-    ),
+    resolver: zodResolver(enhancedProductSchema),
     defaultValues: {
       productName: "",
       productDescription: "",
@@ -175,6 +241,7 @@ export default function ProductPostForm() {
   const productType = form.watch("productType");
   const [createProduct] = useCreateProductMutation();
   const { toast } = useToast();
+
   async function onSubmit(values: z.infer<typeof productSchema>) {
     try {
       setIsSubmitting(true); // Show loading state
@@ -312,6 +379,11 @@ export default function ProductPostForm() {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
+  };
+
+  // Function to handle image loading errors
+  const handleImageError = () => {
+    setImageError(true);
   };
 
   return (
@@ -924,24 +996,15 @@ export default function ProductPostForm() {
                               placeholder="Enter image URL"
                               className="bg-gray-800 border-gray-700 text-white"
                               {...field}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                setImageError(false); // Reset error state when URL changes
+                              }}
                             />
                           </FormControl>
-                          <FormDescription>
-                            {field.value && (
-                              <span className="mt-2">
-                                <span className="block mb-2 text-sm">
-                                  Preview:
-                                </span>
-                                <span className="relative w-[400px] h-[200px]">
-                                  <Image
-                                    fill
-                                    src={field.value || "/placeholder.svg"}
-                                    alt="Cover preview"
-                                    className="w-full max-w-xs h-40 object-cover rounded-md"
-                                  />
-                                </span>
-                              </span>
-                            )}
+                          <FormDescription className="text-xs text-gray-400">
+                            You can use direct image URLs, GitHub URLs, or any
+                            other valid image source.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -961,6 +1024,9 @@ export default function ProductPostForm() {
                               className="bg-gray-800 border-gray-700 text-white"
                             />
                           </FormControl>
+                          <FormDescription className="text-xs text-gray-400">
+                            Example: https://www.youtube.com/watch?v=example
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -979,6 +1045,9 @@ export default function ProductPostForm() {
                               className="bg-gray-800 border-gray-700 text-white"
                             />
                           </FormControl>
+                          <FormDescription className="text-xs text-gray-400">
+                            Example: https://www.youtube.com/watch?v=example
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -997,6 +1066,9 @@ export default function ProductPostForm() {
                               className="bg-gray-800 border-gray-700 text-white"
                             />
                           </FormControl>
+                          <FormDescription className="text-xs text-gray-400">
+                            Example: https://www.youtube.com/watch?v=example
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1131,17 +1203,29 @@ export default function ProductPostForm() {
                             <span className="block text-gray-400">
                               Cover Image
                             </span>
-                            <div className="relative w-[400px] h-[200px]">
-                              <Image
-                                fill
-                                src={
-                                  form.getValues("uploadedCoverImage") ||
-                                  "/placeholder.svg"
-                                }
-                                alt="Cover preview"
-                                className="w-full max-w-xs h-40 object-cover rounded-md mt-2"
-                              />
-                            </div>
+                            {imageError ? (
+                              <Alert className="bg-red-900/20 border-red-800 text-red-300 mt-2">
+                                <AlertCircle className="h-4 w-4 mr-2" />
+                                <AlertDescription>
+                                  Invalid image URL. Please check the URL and
+                                  try again.
+                                </AlertDescription>
+                              </Alert>
+                            ) : (
+                              <div className="relative w-[400px] h-[200px]">
+                                <Image
+                                  fill
+                                  src={
+                                    form.getValues("uploadedCoverImage") ||
+                                    "/placeholder.svg" ||
+                                    "/placeholder.svg"
+                                  }
+                                  alt="Cover preview"
+                                  className="w-full max-w-xs h-40 object-cover rounded-md mt-2"
+                                  onError={handleImageError}
+                                />
+                              </div>
+                            )}
                           </div>
                           <div>
                             <span className="block text-gray-400">
@@ -1149,15 +1233,19 @@ export default function ProductPostForm() {
                             </span>
                             <ul className="list-disc list-inside mt-1">
                               <li>
-                                Setup: {form.getValues("uploadedVideo.setUp")}
+                                Setup:{" "}
+                                {form.getValues("uploadedVideo.setUp") ||
+                                  "None"}
                               </li>
                               <li>
                                 Action Card:{" "}
-                                {form.getValues("uploadedVideo.actionCard")}
+                                {form.getValues("uploadedVideo.actionCard") ||
+                                  "None"}
                               </li>
                               <li>
                                 Gameplay:{" "}
-                                {form.getValues("uploadedVideo.gamePlay")}
+                                {form.getValues("uploadedVideo.gamePlay") ||
+                                  "None"}
                               </li>
                             </ul>
                           </div>

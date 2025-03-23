@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
       "res.cloudinary.com",
       "private-user-images.githubusercontent.com",
       "raw.githubusercontent.com",
+      "github.com",
     ],
   },
   // next.config.js
