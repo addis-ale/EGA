@@ -28,10 +28,6 @@ export function SignoutModal({ onClose }: SignoutModalProps) {
     // Clear Redux state immediately
     dispatch(logout());
 
-    // Manually clear session cookie (if applicable)
-    document.cookie =
-      "next-auth.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-
     // Sign out and redirect
     await signOut({ redirect: false });
     router.replace("/"); // Use replace() to avoid navigation flickering

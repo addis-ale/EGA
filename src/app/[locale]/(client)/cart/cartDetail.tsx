@@ -23,8 +23,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { formatPrice } from "@/utils/helper";
+import { formatPrice, truncateText } from "@/utils/helper";
 import { useCart } from "@/hooks/useCart";
+import { usePathname, useRouter } from "next/navigation";
 
 interface PriceDetails {
   id: string;
@@ -203,7 +204,9 @@ const CartItems = ({ cartItems }: CartItemsProps) => {
   };
 
   const newTotalPrice = calculateTotalPrice();
-
+  const pathName = usePathname();
+  const currentPath = pathName.split("/").slice(0, 2).join("/");
+  const router = useRouter();
   return (
     <div className="w-full max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row gap-8 mt-[100px] items-start">
@@ -239,6 +242,9 @@ const CartItems = ({ cartItems }: CartItemsProps) => {
                 <Card
                   key={item.id}
                   className="overflow-hidden transition-all hover:shadow-lg bg-gray-800"
+                  onClick={() =>
+                    router.push(`${currentPath}/product/${item.product.id}`)
+                  }
                 >
                   <div className="flex flex-col md:flex-row">
                     <div className="relative w-full md:w-1/3 h-48">
@@ -266,7 +272,7 @@ const CartItems = ({ cartItems }: CartItemsProps) => {
                             {item.product.productName}
                           </h2>
                           <p className="text-muted-foreground text-sm mb-3">
-                            {item.product.productDescription}
+                            {truncateText(item.product.productDescription, 70)}
                           </p>
                           <div className="flex items-center text-sm mb-2">
                             <Badge variant="secondary" className="mr-2">

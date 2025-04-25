@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import type * as z from "zod";
 import {
   Check,
   ChevronsUpDown,
@@ -45,7 +45,13 @@ import { useUpdateProductMutation } from "@/state/features/productApi";
 import { useToast } from "@/hooks/use-toast";
 import ProductPreview from "../../createpost/productPreview";
 import { productSchema } from "@/schemas/productSchema";
-import { PriceDetails, Product, Review, VideoUploaded } from "@prisma/client";
+import type {
+  PriceDetails,
+  Product,
+  Review,
+  VideoUploaded,
+} from "@prisma/client";
+import { formatPrice } from "@/utils/helper";
 
 const ageRestrictions = ["None", "13+", "15+", "18+"];
 
@@ -83,31 +89,35 @@ export default function ProductUpdateForm({ singleProduct }: ProductProp) {
   const [ageOpen, setAgeOpen] = useState(false);
   const [gameTypeOpen, setGameTypeOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [formValues, setFormValues] = useState<z.infer<
+    typeof productSchema
+  > | null>(null);
 
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
     defaultValues: {
-      productName: singleProduct.productName,
-      productDescription: singleProduct.productDescription,
-      uploadedCoverImage: singleProduct.uploadedCoverImage,
-      discountPercentage: singleProduct.discountPercentage,
-      ageRestriction: singleProduct.ageRestriction,
-      gameType: singleProduct.gameType,
-      productType: singleProduct.productType,
-      availableForRent: singleProduct.availableForRent,
-      availableForSale: singleProduct.availableForSale,
+      productName: singleProduct.productName || "",
+      productDescription: singleProduct.productDescription || "",
+      uploadedCoverImage: singleProduct.uploadedCoverImage || "",
+      discountPercentage: Number(singleProduct.discountPercentage) || 0,
+      ageRestriction: singleProduct.ageRestriction || "",
+      gameType: singleProduct.gameType || "",
+      productType: singleProduct.productType || "BOTH",
+      availableForRent: Number(singleProduct.availableForRent) || 0,
+      availableForSale: Number(singleProduct.availableForSale) || 0,
       pricing: {
-        rentalPricePerDay: singleProduct.priceDetails.rentalPricePerDay ?? 0,
+        rentalPricePerDay:
+          Number(singleProduct.priceDetails?.rentalPricePerDay) || 0,
         minimumRentalPeriod:
-          singleProduct.priceDetails.minimumRentalPeriod ?? 0,
+          Number(singleProduct.priceDetails?.minimumRentalPeriod) || 0,
         maximumRentalPeriod:
-          singleProduct.priceDetails.maximumRentalPeriod ?? 0,
-        salePrice: singleProduct.priceDetails.salePrice ?? 0,
+          Number(singleProduct.priceDetails?.maximumRentalPeriod) || 0,
+        salePrice: Number(singleProduct.priceDetails?.salePrice) || 0,
       },
       uploadedVideo: {
-        setUp: singleProduct.uploadedVideo[0].setUp,
-        actionCard: singleProduct.uploadedVideo[0].actionCard,
-        gamePlay: singleProduct.uploadedVideo[0].gamePlay,
+        setUp: singleProduct.uploadedVideo?.[0]?.setUp || "",
+        actionCard: singleProduct.uploadedVideo?.[0]?.actionCard || "",
+        gamePlay: singleProduct.uploadedVideo?.[0]?.gamePlay || "",
       },
     },
   });
@@ -115,32 +125,123 @@ export default function ProductUpdateForm({ singleProduct }: ProductProp) {
   const productType = form.watch("productType");
   const [updateProduct] = useUpdateProductMutation();
   const { toast } = useToast();
-  async function onSubmit(values: z.infer<typeof productSchema>) {
-    try {
-      setIsSubmitting(true); // Show loading state
-      console.log("Submitting:", values);
 
-      await updateProduct({
-        id: singleProduct.id,
-        product: { ...values },
-      }).unwrap(); // Await API call
+  // This effect will run when formValues changes
+  useEffect(() => {
+    if (formValues) {
+      console.log("FORM SUBMITTED via useEffect");
+      console.log("Form values:", formValues);
 
-      toast({
-        title: "Product updated",
-        description: "Your product has been successfully updated!",
-        style: {
-          backgroundColor: "green",
-          color: "white",
-          padding: "10px 20px",
-          borderRadius: "8px",
-        },
-      });
-    } catch (err) {
-      console.log("Error:", err);
-      // Handle API error (e.g., show toast notification)
-    } finally {
-      setIsSubmitting(false); // Reset loading state
+      const submitForm = async () => {
+        try {
+          setIsSubmitting(true);
+
+          // Get the product type to determine which fields to include
+          const productType = formValues.productType;
+
+          // Create a formatted object based on product type
+          const formattedValues: any = {
+            ...formValues,
+            discountPercentage: Number(formValues.discountPercentage),
+            pricing: { ...formValues.pricing },
+          };
+
+          // For SALE only products
+          if (productType === "SALE") {
+            formattedValues.availableForSale = Number(
+              formValues.availableForSale
+            );
+            formattedValues.availableForRent = 0;
+            formattedValues.pricing = {
+              salePrice: Number(formValues.pricing.salePrice),
+              // Include minimal valid values for rental fields
+              rentalPricePerDay: 0,
+              minimumRentalPeriod: 1,
+              maximumRentalPeriod: 1,
+            };
+          }
+          // For RENT only products
+          else if (productType === "RENT") {
+            formattedValues.availableForRent = Number(
+              formValues.availableForRent
+            );
+            formattedValues.availableForSale = 0;
+            formattedValues.pricing = {
+              salePrice: 0,
+              rentalPricePerDay: Number(formValues.pricing.rentalPricePerDay),
+              minimumRentalPeriod: Number(
+                formValues.pricing.minimumRentalPeriod
+              ),
+              maximumRentalPeriod: Number(
+                formValues.pricing.maximumRentalPeriod
+              ),
+            };
+          }
+          // For BOTH products
+          else {
+            formattedValues.availableForSale = Number(
+              formValues.availableForSale
+            );
+            formattedValues.availableForRent = Number(
+              formValues.availableForRent
+            );
+            formattedValues.pricing = {
+              salePrice: Number(formValues.pricing.salePrice),
+              rentalPricePerDay: Number(formValues.pricing.rentalPricePerDay),
+              minimumRentalPeriod: Number(
+                formValues.pricing.minimumRentalPeriod
+              ),
+              maximumRentalPeriod: Number(
+                formValues.pricing.maximumRentalPeriod
+              ),
+            };
+          }
+
+          console.log("Formatted values for API:", formattedValues);
+          console.log("API request payload:", {
+            id: singleProduct.id,
+            product: formattedValues,
+          });
+
+          const result = await updateProduct({
+            id: singleProduct.id,
+            product: formattedValues,
+          }).unwrap();
+
+          console.log("API response:", result);
+
+          toast({
+            title: "Product updated",
+            description: "Your product has been successfully updated!",
+            style: {
+              backgroundColor: "green",
+              color: "white",
+              padding: "10px 20px",
+              borderRadius: "8px",
+            },
+          });
+        } catch (err) {
+          console.error("Error updating product:", err);
+          toast({
+            title: "Update failed",
+            description:
+              "There was a problem updating your product. Please try again.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsSubmitting(false);
+          setFormValues(null); // Reset form values after submission
+        }
+      };
+
+      submitForm();
     }
+  }, [formValues, singleProduct.id, updateProduct, toast]);
+
+  function onSubmit(values: z.infer<typeof productSchema>) {
+    console.log("onSubmit function called");
+    console.log("Form values in onSubmit:", values);
+    setFormValues(values); // This will trigger the useEffect
   }
 
   const nextStep = async () => {
@@ -220,6 +321,70 @@ export default function ProductUpdateForm({ singleProduct }: ProductProp) {
   const prevStep = () => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
+    }
+  };
+
+  // Function to manually submit the form
+  const handleManualSubmit = async () => {
+    console.log("Manual submit triggered");
+
+    // Get the current product type
+    const currentProductType = form.getValues("productType");
+    console.log("Current product type:", currentProductType);
+
+    // Prepare the form data with conditional validation
+    const formData = form.getValues();
+
+    // Create a copy of the form data that we'll modify based on product type
+    const validatedData = { ...formData };
+
+    // For SALE only products, set rental fields to valid defaults
+    if (currentProductType === "SALE") {
+      validatedData.pricing = {
+        ...validatedData.pricing,
+        rentalPricePerDay: 0,
+        minimumRentalPeriod: 1, // Set to minimum valid value
+        maximumRentalPeriod: 1, // Set to minimum valid value
+      };
+      validatedData.availableForRent = 0;
+    }
+
+    // For RENT only products, set sale fields to valid defaults
+    if (currentProductType === "RENT") {
+      validatedData.pricing = {
+        ...validatedData.pricing,
+        salePrice: 0,
+      };
+      validatedData.availableForSale = 0;
+    }
+
+    // Set the modified values back to the form
+    Object.entries(validatedData).forEach(([key, value]) => {
+      if (key === "pricing") {
+        Object.entries(value).forEach(([pricingKey, pricingValue]) => {
+          form.setValue(`pricing.${pricingKey}` as any, pricingValue);
+        });
+      } else {
+        form.setValue(key as any, value);
+      }
+    });
+
+    // Now trigger validation with our modified values
+    const isValid = await form.trigger();
+    console.log("Form validation result:", isValid);
+
+    if (isValid) {
+      // Get the values after our modifications
+      const values = form.getValues();
+      console.log("All form values:", values);
+      onSubmit(values);
+    } else {
+      console.log("Form validation failed:", form.formState.errors);
+      toast({
+        title: "Validation Error",
+        description: "Please check the form for errors and try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -319,6 +484,9 @@ export default function ProductUpdateForm({ singleProduct }: ProductProp) {
                                 min="0"
                                 max="100"
                                 {...field}
+                                onChange={(e) =>
+                                  field.onChange(+e.target.value)
+                                }
                                 className="bg-gray-800 border-gray-700 text-white"
                               />
                             </FormControl>
@@ -561,6 +729,9 @@ export default function ProductUpdateForm({ singleProduct }: ProductProp) {
                                     type="number"
                                     min="0"
                                     {...field}
+                                    onChange={(e) =>
+                                      field.onChange(+e.target.value)
+                                    }
                                     className="bg-gray-800 border-gray-700 text-white"
                                   />
                                 </FormControl>
@@ -580,6 +751,9 @@ export default function ProductUpdateForm({ singleProduct }: ProductProp) {
                                     type="number"
                                     min="0"
                                     {...field}
+                                    onChange={(e) =>
+                                      field.onChange(+e.target.value)
+                                    }
                                     className="bg-gray-800 border-gray-700 text-white"
                                   />
                                 </FormControl>
@@ -607,6 +781,9 @@ export default function ProductUpdateForm({ singleProduct }: ProductProp) {
                                   type="number"
                                   min="0"
                                   {...field}
+                                  onChange={(e) =>
+                                    field.onChange(+e.target.value)
+                                  }
                                   className="bg-gray-800 border-gray-700 text-white"
                                 />
                               </FormControl>
@@ -627,6 +804,9 @@ export default function ProductUpdateForm({ singleProduct }: ProductProp) {
                                     type="number"
                                     min="0"
                                     {...field}
+                                    onChange={(e) =>
+                                      field.onChange(+e.target.value)
+                                    }
                                     className="bg-gray-800 border-gray-700 text-white"
                                   />
                                 </FormControl>
@@ -648,6 +828,9 @@ export default function ProductUpdateForm({ singleProduct }: ProductProp) {
                                     type="number"
                                     min="1"
                                     {...field}
+                                    onChange={(e) =>
+                                      field.onChange(+e.target.value)
+                                    }
                                     className="bg-gray-800 border-gray-700 text-white"
                                   />
                                 </FormControl>
@@ -669,6 +852,9 @@ export default function ProductUpdateForm({ singleProduct }: ProductProp) {
                                     type="number"
                                     min="1"
                                     {...field}
+                                    onChange={(e) =>
+                                      field.onChange(+e.target.value)
+                                    }
                                     className="bg-gray-800 border-gray-700 text-white"
                                   />
                                 </FormControl>
@@ -848,7 +1034,9 @@ export default function ProductUpdateForm({ singleProduct }: ProductProp) {
                                 Sale Price
                               </span>
                               <span>
-                                ${form.getValues("pricing.salePrice")}
+                                {formatPrice(
+                                  form.getValues("pricing.salePrice") ?? 0
+                                )}
                               </span>
                             </div>
                             <div>
@@ -872,7 +1060,10 @@ export default function ProductUpdateForm({ singleProduct }: ProductProp) {
                                 Rental Price Per Day
                               </span>
                               <span>
-                                ${form.getValues("pricing.rentalPricePerDay")}
+                                {formatPrice(
+                                  form.getValues("pricing.rentalPricePerDay") ??
+                                    0
+                                )}
                               </span>
                             </div>
                             <div>
@@ -965,7 +1156,7 @@ export default function ProductUpdateForm({ singleProduct }: ProductProp) {
                   ) : (
                     <Button
                       type="button"
-                      onClick={form.handleSubmit(onSubmit)}
+                      onClick={handleManualSubmit}
                       disabled={isSubmitting}
                       className="bg-teal hover:bg-teal text-white"
                     >

@@ -282,19 +282,16 @@ export default function DetailHero({ product }: DetailHeroProps) {
                 product.priceDetails.rentalPricePerDay) ??
               0 > 0 ? (
                 <DateRangeDialog product={product} />
-              ) : (
-                (purchaseType === "rent" &&
-                  product.priceDetails.rentalPricePerDay) ??
-                (0 > 0 && (
-                  <Button
-                    className="flex items-center gap-2 bg-green-600 px-4 py-2 hover:bg-green-700 w-full h-10 sm:h-12 text-sm sm:text-base font-sans tracking-wide"
-                    onClick={handleAddToCartBuy}
-                  >
-                    <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                    <span className="text-white">Save to Buy</span>
-                  </Button>
-                ))
-              )}
+              ) : (purchaseType === "buy" && product.priceDetails.salePrice) ??
+                0 > 0 ? (
+                <Button
+                  className="flex items-center gap-2 bg-green-600 px-4 py-2 hover:bg-green-700 w-full h-10 sm:h-12 text-sm sm:text-base font-sans tracking-wide"
+                  onClick={handleAddToCartBuy}
+                >
+                  <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                  <span className="text-white">Save to Buy</span>
+                </Button>
+              ) : null}
 
               <Button
                 className="flex items-center gap-2 border-2 border-green-600 px-4 py-2 w-full h-10 sm:h-12 text-sm sm:text-base bg-transparent hover:bg-gray-700 font-sans tracking-wide"
