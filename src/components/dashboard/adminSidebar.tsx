@@ -1,5 +1,5 @@
 "use client";
-import { Package, Home, ShoppingCart, PlusCircle, LogOut } from "lucide-react";
+import { Package, Home, PlusCircle, LogOut } from "lucide-react";
 
 import {
   Sidebar,
@@ -32,12 +32,6 @@ const items = [
     title: "Products",
     url: "/dashboard/products",
     icon: Package,
-  },
-
-  {
-    title: "Orders",
-    url: "/dashboard/orders",
-    icon: ShoppingCart,
   },
 ];
 export function AdminSidebar() {
