@@ -43,7 +43,6 @@ import {
 import Image from "next/image";
 import { useUpdateProductMutation } from "@/state/features/productApi";
 import { useToast } from "@/hooks/use-toast";
-import ProductPreview from "../../createpost/productPreview";
 import { productSchema } from "@/schemas/productSchema";
 import type {
   PriceDetails,
@@ -52,6 +51,7 @@ import type {
   VideoUploaded,
 } from "@prisma/client";
 import { formatPrice } from "@/utils/helper";
+import ProductPreview from "../../createpost/productPreview";
 
 const ageRestrictions = ["None", "13+", "15+", "18+"];
 
