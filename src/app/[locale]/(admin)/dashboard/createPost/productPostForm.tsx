@@ -467,7 +467,6 @@ export default function ProductPostForm() {
                               className="min-h-[100px] bg-gray-800 border-gray-700 text-white"
                               {...field}
                             />
-                            npm
                           </FormControl>
                           <FormMessage />
                         </FormItem>

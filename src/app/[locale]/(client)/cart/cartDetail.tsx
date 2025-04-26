@@ -414,7 +414,10 @@ const CartItems = ({ cartItems }: CartItemsProps) => {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleRemoveItem(item.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveItem(item.id);
+                          }}
                         >
                           <Trash2Icon className="h-4 w-4" />
                         </Button>
@@ -428,12 +431,13 @@ const CartItems = ({ cartItems }: CartItemsProps) => {
                             variant="outline"
                             size="icon"
                             className="h-8 w-8 rounded-full"
-                            onClick={() =>
+                            onClick={(e) => {
+                              e.stopPropagation();
                               handleQuantityChange(
                                 item.id,
                                 quantities[item.id] - 1
-                              )
-                            }
+                              );
+                            }}
                           >
                             <MinusIcon className="h-3 w-3" />
                           </Button>
@@ -444,12 +448,13 @@ const CartItems = ({ cartItems }: CartItemsProps) => {
                             variant="outline"
                             size="icon"
                             className="h-8 w-8 rounded-full"
-                            onClick={() =>
+                            onClick={(e) => {
+                              e.stopPropagation();
                               handleQuantityChange(
                                 item.id,
                                 quantities[item.id] + 1
-                              )
-                            }
+                              );
+                            }}
                           >
                             <PlusIcon className="h-3 w-3" />
                           </Button>
@@ -572,6 +577,7 @@ const CartItems = ({ cartItems }: CartItemsProps) => {
               <Button
                 className="w-full bg-teal text-white hover:bg-teal/90"
                 size="lg"
+                onClick={() => router.push(`${currentPath}/checkout`)}
               >
                 Proceed to Checkout
               </Button>

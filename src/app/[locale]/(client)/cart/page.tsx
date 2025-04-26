@@ -26,7 +26,7 @@ const CartPage = () => {
       priceDetails: product.priceDetails || {},
     }));
   const myCart = formatCartItems(cartItems);
-  console.log(myCart);
+  console.log("My cart >>>>", myCart);
 
   const user = useSelector(
     (state: RootState) => state.currentUser?.user as User | null

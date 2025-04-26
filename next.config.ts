@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
       "private-user-images.githubusercontent.com",
       "raw.githubusercontent.com",
       "github.com",
+      "media.istockphoto.com",
     ],
   },
   // next.config.js
